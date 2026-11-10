@@ -1,0 +1,77 @@
+/* ==========================================================================
+   COREFLOW DESIGN SYSTEM — TOKENS CENTRALIZADOS (WEBCORE)
+   Dirección Visual: "Geometría Dinámica"
+   Slogan: Organiza. Conecta. Evoluciona.
+   ========================================================================== */
+
+:root {
+  /* Paleta Principal */
+  --cf-midnight-navy: #171936;
+  --cf-midnight-deep: #101228;
+  --cf-midnight-surface: #1E2144;
+  --cf-electric-violet: #6545E8;
+  --cf-electric-violet-hover: #5334D3;
+  --cf-electric-violet-soft: #EFEBFD;
+  --cf-royal-blue: #3568E8;
+  --cf-royal-blue-soft: #E6F0FF;
+  --cf-cyan: #08C9E8;
+  --cf-cyan-soft: #E5F9FC;
+  --cf-lime-green: #A6E91C;
+  --cf-lime-dark: #5A8700;
+  --cf-lime-soft: #F2FCE0;
+  --cf-cloud-gray: #F4F5FA;
+  --cf-white: #FFFFFF;
+
+  /* Neutrales y Superficies (Interfaz Clara por defecto) */
+  --cf-bg-app: #F4F5FA;
+  --cf-bg-surface: #FFFFFF;
+  --cf-bg-subtle: #EDF0F8;
+  --cf-text-primary: #171936;
+  --cf-text-secondary: #64748B;
+  --cf-border: #E2E6F2;
+  --cf-border-strong: #CBD2E6;
+
+  /* Estados Semánticos Coherentes */
+  --cf-state-active-bg: #EAFBE7;
+  --cf-state-active-text: #15803D;
+  --cf-state-active-dot: #22C55E;
+
+  --cf-state-process-bg: #E5F7FC;
+  --cf-state-process-text: #0284C7;
+  --cf-state-process-dot: #08C9E8;
+
+  --cf-state-pending-bg: #FEF6E0;
+  --cf-state-pending-text: #B45309;
+  --cf-state-pending-dot: #F59E0B;
+
+  --cf-state-completed-bg: #EFEBFD;
+  --cf-state-completed-text: #6545E8;
+  --cf-state-completed-dot: #6545E8;
+
+  --cf-state-error-bg: #FEE2E2;
+  --cf-state-error-text: #DC2626;
+  --cf-state-error-dot: #EF4444;
+
+  /* Geometría y Elevación */
+  --cf-radius-sm: 8px;
+  --cf-radius-md: 12px;
+  --cf-radius-card: 14px;
+  --cf-radius-lg: 16px;
+  --cf-shadow-card: 0 2px 10px -2px rgba(23, 25, 54, 0.05), 0 0 0 1px rgba(226, 230, 242, 0.85);
+  --cf-shadow-elevated: 0 12px 28px -6px rgba(23, 25, 54, 0.12), 0 0 0 1px rgba(226, 230, 242, 0.7);
+
+  /* Tipografía */
+  --cf-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Vista Alternativa (Resumen Ejecutivo / Modo Oscuro de Marca) */
+[data-theme="dark"] {
+  --cf-bg-app: #0F1126;
+  --cf-bg-surface: #171936;
+  --cf-bg-subtle: #20234A;
+  --cf-text-primary: #F8FAFC;
+  --cf-text-secondary: #94A3B8;
+  --cf-border: #282C5A;
+  --cf-border-strong: #393F7A;
+  --cf-shadow-card: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.07);
+}

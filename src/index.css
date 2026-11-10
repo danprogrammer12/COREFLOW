@@ -1,0 +1,51 @@
+@import './styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: var(--cf-font-sans);
+    background-color: var(--cf-bg-app);
+    color: var(--cf-text-primary);
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Recursos gráficos de marca: Geometría diagonal dinámica (uso sutil y funcional) */
+.cf-diagonal-pattern {
+  background-image: linear-gradient(
+    125deg,
+    rgba(101, 69, 232, 0.08) 0%,
+    rgba(8, 201, 232, 0.04) 45%,
+    transparent 70%
+  );
+}
+
+.cf-brand-canvas {
+  background-color: #171936;
+  background-image:
+    radial-gradient(circle at 88% 14%, rgba(8, 201, 232, 0.14) 0%, transparent 42%),
+    radial-gradient(circle at 12% 85%, rgba(101, 69, 232, 0.22) 0%, transparent 48%);
+}
+
+/* Scrollbar limpio y discreto */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD2E6;
+  border-radius: 9999px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #2E3366;
+}
