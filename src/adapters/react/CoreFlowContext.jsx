@@ -22,13 +22,15 @@ const ROLE_LABEL_BY_CODE = {
   SPECIALIST: 'Especialista Documental',
 }
 
+const DATA_MODE = 'local-dev'
+
 export function CoreFlowProvider({ children }) {
   const supabaseStatus = useMemo(() => getSupabaseConfigStatus(), [])
 
   const engine = useMemo(
     () =>
       createCoreFlowEngine({
-        mode: 'local-dev',
+        mode: DATA_MODE,
         persistToBrowser: true,
       }),
     []
@@ -106,23 +108,32 @@ export function CoreFlowProvider({ children }) {
       entitlementsResolved: tenantContext?.entitlementsResolved || null,
     })
 
+    // Los acumulados salen de los registros reales de la organización, igual que las listas.
     if (tenantContext) {
-      baseMetrics.acumulados.clientesTotal = Math.max(
-        baseMetrics.acumulados.clientesTotal,
-        clients.length
-      )
-      baseMetrics.acumulados.oportunidadesActivas = Math.max(
-        baseMetrics.acumulados.oportunidadesActivas,
-        opportunities.length
-      )
-      baseMetrics.acumulados.tareasPendientesActuales = Math.max(
-        baseMetrics.acumulados.tareasPendientesActuales,
-        tasks.filter((t) => t.status !== 'completed').length
-      )
-      baseMetrics.acumulados.documentosTotales = Math.max(
-        baseMetrics.acumulados.documentosTotales,
-        documents.length
-      )
+      const activeClients = clients.filter((c) => c.status === 'active').length
+      const openOpportunities = opportunities.filter((o) => o.status !== 'completed')
+      const proposals = openOpportunities.filter((o) => o.stage === 'propuesta').length
+      const openTasks = tasks.filter((t) => t.status !== 'completed')
+      const dueToday = openTasks.filter((t) => /hoy/i.test(t.dueLabel || '')).length
+      const validDocuments = documents.filter(
+        (d) => d.status === 'active' || d.status === 'completed'
+      ).length
+
+      Object.assign(baseMetrics.acumulados, {
+        clientesTotal: clients.length,
+        clientesActivos: activeClients,
+        clientesIncorporacion: clients.length - activeClients,
+        oportunidadesActivas: openOpportunities.length,
+        oportunidadesPropuesta: proposals,
+        oportunidadesValidacion: openOpportunities.length - proposals,
+        tareasPendientesActuales: openTasks.length,
+        tareasHoy: dueToday,
+        tareasSemana: openTasks.length - dueToday,
+        documentosTotales: documents.length,
+        documentosVigentes: validDocuments,
+        documentosRevision: documents.length - validDocuments,
+        solicitudesEnSeguimiento: requests.filter((r) => r.estado !== 'completed').length,
+      })
     }
 
     return baseMetrics
@@ -484,6 +495,7 @@ export function CoreFlowProvider({ children }) {
     presentationEdition: effectiveEdition,
     entitlementsResolved: tenantContext?.entitlementsResolved || null,
     activeMembership: tenantContext?.activeMembership || null,
+    isDemoData: DATA_MODE === 'local-dev',
     activeRole:
       ROLE_LABEL_BY_CODE[tenantContext?.activeMembership?.roleCode] ||
       'Administrador Organizacional',

@@ -16,7 +16,8 @@ import { checkCapability, EDITION_RULES } from '../../data/demoStore'
 export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreated }) {
   const [title, setTitle] = useState('')
   const [client, setClient] = useState('Cuenta Corporativa A (Sector Servicios)')
-  const [area, setArea] = useState('Operaciones')
+  const isBusinessEdition = edition === 'business'
+  const [area, setArea] = useState(isBusinessEdition ? 'Operaciones' : 'General')
   const [responsable, setResponsable] = useState('Coordinación de Operaciones')
   const [priority, setPriority] = useState('Alta')
 
@@ -86,7 +87,7 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
             required
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 gap-4 ${isBusinessEdition ? 'sm:grid-cols-2' : ''}`}>
             <div>
               <label className="text-xs font-semibold text-core-navy dark:text-slate-200 block mb-1.5">
                 Cuenta / Organización asociada
@@ -103,6 +104,7 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
               </select>
             </div>
 
+            {isBusinessEdition && (
             <div>
               <label className="text-xs font-semibold text-core-navy dark:text-slate-200 block mb-1.5">
                 Área / Departamento destino
@@ -119,6 +121,7 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
                 <option>Tecnología</option>
               </select>
             </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

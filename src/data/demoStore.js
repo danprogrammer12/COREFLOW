@@ -11,7 +11,7 @@
 export const EDITION_RULES = {
   start: {
     id: 'start',
-    name: 'CoreFlow Start',
+    name: 'CoreFlow Starter',
     collaboratorsRange: '1 a 15 colaboradores',
     maxCollaborators: 15,
     activeCollaborators: 12,
@@ -118,7 +118,7 @@ export function checkCapability(edition, roleName, capability) {
         allowed: plan.features.crossAreaAutomation,
         reason: plan.features.crossAreaAutomation
           ? 'Reglas entre áreas habilitadas'
-          : 'En CoreFlow Start se aplican automatizaciones básicas de notificación directa.',
+          : 'En CoreFlow Starter se aplican automatizaciones básicas de notificación directa.',
       }
 
     default:

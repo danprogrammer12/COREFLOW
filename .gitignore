@@ -6,6 +6,7 @@ dist/
 *.local
 
 # Variables de entorno y credenciales
+.vercel
 .env
 .env.*
 !.env.example

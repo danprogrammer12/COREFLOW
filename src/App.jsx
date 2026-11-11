@@ -8,13 +8,13 @@ import { PlatformAdminView } from './views/PlatformAdminView'
 import { ModulesPreviewView } from './views/ModulesPreviewView'
 import {
   NewRequestModal,
-  AiAssistantDrawer,
   RequestDetailDrawer,
 } from './components/modals/QuickActionModals'
 
 function CoreFlowWorkspace() {
   const {
     supabaseStatus,
+    isDemoData,
     isAuthenticated,
     isPlatformAdmin,
     accessContext,
@@ -135,6 +135,8 @@ function CoreFlowWorkspace() {
     return (
       <PlatformAdminView
         user={user}
+        supabaseStatus={supabaseStatus}
+        isDemoData={isDemoData}
         plans={platformAdminData.plans}
         organizations={platformAdminData.organizations}
         usersData={platformAdminData.users}
@@ -167,13 +169,13 @@ function CoreFlowWorkspace() {
         }}
         activeRole={activeRole}
         user={user}
+        isDemoData={isDemoData}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode((d) => !d)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onOpenAuth={() => setShowAuthScreen(true)}
         onSignOut={handleSignOut}
-        onOpenAiAssistant={() => setAiDrawerOpen(true)}
         counts={{
           clientes: unifiedMetrics.acumulados.clientesTotal,
           comercial: unifiedMetrics.acumulados.oportunidadesActivas,
@@ -197,11 +199,17 @@ function CoreFlowWorkspace() {
             darkMode={darkMode}
             searchQuery={searchQuery}
             onNavigate={setActiveView}
+            clients={clients}
             requests={requests}
+            tasks={tasks}
+            documents={documents}
+            automationRules={automationRules}
             onSelectRequest={(req) => setSelectedRequestId(req.id)}
             onCycleRequestStatus={handleCycleRequestStatus}
             onApproveRequestLevel={handleApproveLevel}
             onOpenNewRequestModal={() => setNewRequestOpen(true)}
+            onToggleTaskStatus={toggleTaskStatus}
+            onCreateTask={createTask}
           />
         )}
 
@@ -255,13 +263,6 @@ function CoreFlowWorkspace() {
         activeRole={activeRole}
         onUpdateStatus={handleUpdateRequestStatus}
         onApproveLevel={handleApproveLevel}
-      />
-
-      <AiAssistantDrawer
-        isOpen={aiDrawerOpen}
-        onClose={() => setAiDrawerOpen(false)}
-        edition={presentationEdition}
-        unifiedMetrics={unifiedMetrics}
       />
     </>
   )

@@ -17,7 +17,8 @@ import {
   Sparkles,
   RefreshCw,
 } from 'lucide-react'
-import { CoreFlowLogo } from '../components/brand/CoreFlowLogo'
+import { CoreFlowLogo, CoreFlowIsotipo } from '../components/brand/CoreFlowLogo'
+import { DesignSystemView } from './DesignSystemView'
 import {
   Button,
   KpiCard,
@@ -27,13 +28,16 @@ import {
   ToastNotification,
   GeometricAccentBar,
 } from '../components/ui/Primitives'
+import { auditActionLabel, featureLabel, formatStorageMb, roleLabel } from '../components/ui/labels'
 
 export function PlatformAdminView({
   user,
   supabaseStatus,
+  isDemoData = false,
   plans = [],
   organizations = [],
-  platformUsers = { platformAdmins: [], userProfiles: [], memberships: [] },
+  usersData,
+  platformUsers: platformUsersProp,
   globalAuditLogs = [],
   darkMode = false,
   onToggleDarkMode,
@@ -43,32 +47,24 @@ export function PlatformAdminView({
   onUpdateEntitlement,
   onSignOut,
 }) {
+  const platformUsers = usersData ||
+    platformUsersProp || { platformAdmins: [], userProfiles: [], memberships: [] }
   const [activeSection, setActiveSection] = useState('organizaciones')
+  const [showInternalDesignSystem, setShowInternalDesignSystem] = useState(false)
   const [toast, setToast] = useState(null)
 
-  // Estado para formulario de creación/edición de Plan en PostgreSQL
-  const [editingPlan, setEditingPlan] = useState({
-    planCode: 'enterprise',
-    displayName: 'CoreFlow Enterprise',
-    description: 'Plan corporativo multi-sede con capacidades extendidas y almacenamiento ampliado.',
-    priceMonthlyUsd: 249,
-    collaboratorsRangeLabel: '31 a 100 colaboradores',
-    limits: {
-      maxCollaborators: 100,
-      maxBranches: 25,
-      maxStorageMb: 102400,
-    },
-    features: {
-      multiBranch: true,
-      departmentsAndTeams: true,
-      granularPermissions: true,
-      multilevelApprovals: true,
-      crossAreaAutomations: true,
-      responsibleIndicators: true,
-      basicAutomations: true,
-      aiAssistant: true,
-    },
+  const blankPlan = () => ({
+    planCode: '',
+    displayName: '',
+    description: '',
+    priceMonthlyUsd: 0,
+    collaboratorsRangeLabel: '',
+    limits: { maxCollaborators: 1, maxBranches: 1, maxStorageMb: null },
+    features: Object.fromEntries(Object.keys(plans[0]?.features || {}).map((key) => [key, false])),
   })
+
+  // Formulario de creación o edición de un plan
+  const [editingPlan, setEditingPlan] = useState(blankPlan)
 
   // Estado para formulario de nueva organización
   const [newOrgForm, setNewOrgForm] = useState({
@@ -83,24 +79,55 @@ export function PlatformAdminView({
   })
 
   // Estado para edición rápida de suscripción y cuota de una organización
-  const [selectedOrgForSub, setSelectedOrgForSub] = useState(organizations[0]?.id || 'org-pyme')
-  const [subPlanCode, setSubPlanCode] = useState('starter')
-  const [subStatus, setSubStatus] = useState('active')
-  const [subBillingCycle, setSubBillingCycle] = useState('monthly')
-  const [subValidUntil, setSubValidUntil] = useState('2027-12-31')
-  const [customMaxCollab, setCustomMaxCollab] = useState(15)
-
-  const handleSelectOrgToManage = (org) => {
-    setSelectedOrgForSub(org.id)
-    const currentPlan = org.subscription?.planCode || org.contractedPlanCode || 'starter'
-    setSubPlanCode(currentPlan === 'start' ? 'starter' : currentPlan)
-    setSubStatus(org.subscription?.status || org.status || 'active')
-    setSubBillingCycle(org.subscription?.billingCycle || 'monthly')
-    const maxCollabOverride = org.entitlements?.find(
+  // El formulario parte siempre de la suscripción real de la organización elegida.
+  const subscriptionFormFrom = (org) => {
+    const contracted = org?.subscription?.planCode || org?.contractedPlanCode || 'starter'
+    const planCode = contracted === 'start' ? 'starter' : contracted
+    const override = org?.entitlements?.find(
       (e) => e.entitlementKey === 'max_collaborators'
     )?.valueJson
-    setCustomMaxCollab(typeof maxCollabOverride === 'number' ? maxCollabOverride : 15)
+    return {
+      planCode,
+      status: org?.subscription?.status || org?.status || 'active',
+      billingCycle: org?.subscription?.billingCycle || 'monthly',
+      validUntil: (org?.subscription?.validUntil || '').slice(0, 10),
+      maxCollab:
+        typeof override === 'number'
+          ? override
+          : plans.find((p) => p.planCode === planCode)?.limits.maxCollaborators ?? 15,
+    }
   }
+  const initialSubscription = subscriptionFormFrom(organizations[0])
+
+  const [selectedOrgForSub, setSelectedOrgForSub] = useState(organizations[0]?.id || '')
+  const [subPlanCode, setSubPlanCode] = useState(initialSubscription.planCode)
+  const [subStatus, setSubStatus] = useState(initialSubscription.status)
+  const [subBillingCycle, setSubBillingCycle] = useState(initialSubscription.billingCycle)
+  const [subValidUntil, setSubValidUntil] = useState(initialSubscription.validUntil)
+  const [customMaxCollab, setCustomMaxCollab] = useState(initialSubscription.maxCollab)
+  const [auditFilter, setAuditFilter] = useState('all')
+
+  const selectedOrgName =
+    organizations.find((o) => o.id === selectedOrgForSub)?.displayName || 'Sin selección'
+  const orgNameOf = (id) => organizations.find((o) => o.id === id)?.displayName || 'Plataforma'
+  const auditModules = [...new Set(globalAuditLogs.map((log) => log.module).filter(Boolean))]
+  const visibleAuditLogs =
+    auditFilter === 'all'
+      ? globalAuditLogs
+      : globalAuditLogs.filter((log) => log.module === auditFilter)
+
+  const handleSelectOrgToManage = (org) => {
+    const form = subscriptionFormFrom(org)
+    setSelectedOrgForSub(org.id)
+    setSubPlanCode(form.planCode)
+    setSubStatus(form.status)
+    setSubBillingCycle(form.billingCycle)
+    setSubValidUntil(form.validUntil)
+    setCustomMaxCollab(form.maxCollab)
+  }
+
+  const showFailure = (res) =>
+    setToast({ title: 'No se pudo guardar', description: res?.error || 'Revisa los datos e inténtalo de nuevo.' })
 
   const handleSaveSubscription = (e) => {
     e.preventDefault()
@@ -109,27 +136,25 @@ export function PlatformAdminView({
       planCode: subPlanCode,
       status: subStatus,
       billingCycle: subBillingCycle,
-      validUntil: `${subValidUntil}T00:00:00.000Z`,
+      validUntil: subValidUntil ? `${subValidUntil}T00:00:00.000Z` : null,
       maxCollaboratorsOverride: Number(customMaxCollab),
       notes: `Actualizado desde CoreFlow Platform Admin por ${user?.email}`,
     })
-    if (res?.ok !== false) {
-      setToast({
-        title: 'Suscripción y cuotas actualizadas en base de datos',
-        description: `La organización "${selectedOrgForSub}" ahora opera bajo el plan "${subPlanCode.toUpperCase()}" (${subStatus}) con límite de ${customMaxCollab} colaboradores.`,
-      })
-    }
+    if (res?.ok === false) return showFailure(res)
+    setToast({
+      title: 'Suscripción actualizada',
+      description: `${selectedOrgName} queda en el plan ${plans.find((p) => p.planCode === subPlanCode)?.displayName || subPlanCode}, con un límite de ${customMaxCollab} colaboradores.`,
+    })
   }
 
   const handleSavePlan = (e) => {
     e.preventDefault()
     const res = onUpsertPlan?.(editingPlan)
-    if (res?.ok !== false) {
-      setToast({
-        title: `Plan "${editingPlan.displayName}" guardado en plan_catalog`,
-        description: `El plan (${editingPlan.planCode}) está disponible en PostgreSQL para asignarse a cualquier organización.`,
-      })
-    }
+    if (res?.ok === false) return showFailure(res)
+    setToast({
+      title: `Plan "${editingPlan.displayName}" guardado`,
+      description: 'Ya se puede asignar a cualquier organización.',
+    })
   }
 
   const handleCreateOrgSubmit = (e) => {
@@ -144,22 +169,21 @@ export function PlatformAdminView({
       ...newOrgForm,
       slug,
     })
-    if (res?.ok !== false) {
-      setNewOrgForm({
-        displayName: '',
-        legalName: '',
-        taxId: '',
-        sector: 'Servicios Empresariales',
-        planCode: 'starter',
-        billingCycle: 'monthly',
-        adminEmail: '',
-        adminFullName: '',
-      })
-      setToast({
-        title: 'Organización aprovisionada exitosamente',
-        description: `Se creó el tenant aislado con suscripción ${newOrgForm.planCode.toUpperCase()} y registro en auditoría.`,
-      })
-    }
+    if (res?.ok === false) return showFailure(res)
+    setNewOrgForm({
+      displayName: '',
+      legalName: '',
+      taxId: '',
+      sector: 'Servicios Empresariales',
+      planCode: 'starter',
+      billingCycle: 'monthly',
+      adminEmail: '',
+      adminFullName: '',
+    })
+    setToast({
+      title: 'Organización creada',
+      description: `${newOrgForm.displayName} ya tiene su suscripción inicial.`,
+    })
   }
 
   const navItems = [
@@ -171,7 +195,7 @@ export function PlatformAdminView({
   ]
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-core-cloud dark:bg-[#0F1126] text-core-navy dark:text-slate-100">
+    <div className="h-screen w-full overflow-hidden flex flex-col lg:flex-row bg-core-cloud dark:bg-[#0F1126] text-core-navy dark:text-slate-100">
       {toast && (
         <ToastNotification
           title={toast.title}
@@ -180,63 +204,69 @@ export function PlatformAdminView({
         />
       )}
 
-      {/* SIDEBAR EXCLUSIVO DE COREFLOW PLATFORM ADMIN */}
-      <aside className="w-full lg:w-72 bg-core-navy text-white flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-white/10 shrink-0">
-        <div>
-          <div className="h-16 px-5 flex items-center justify-between border-b border-white/10">
-            <CoreFlowLogo variant="horizontal" theme="dark" size="sm" />
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-core-lime text-core-navy">
-              Platform Admin
-            </span>
-          </div>
-
-          <div className="p-4">
-            <div className="rounded-xl bg-[#1E2146] border border-core-violet/40 p-3.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-core-cyan">
-                <ShieldCheck className="w-4 h-4 text-core-lime shrink-0" />
-                <span>Gobierno Global del SaaS</span>
-              </div>
-              <p className="mt-1.5 text-[11px] text-slate-300 leading-relaxed">
-                Contexto administrativo independiente. Administra organizaciones, planes en
-                PostgreSQL, suscripciones, capacidades, cuotas y auditoría global.
-              </p>
-            </div>
-          </div>
-
-          <nav className="px-3 pb-4 space-y-1" aria-label="Navegación Platform Admin">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = activeSection === item.id
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActiveSection(item.id)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-core-violet text-white font-semibold shadow-md shadow-core-violet/25'
-                      : 'text-slate-300 hover:text-white hover:bg-white/6'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              )
-            })}
-          </nav>
+      {/* SIDEBAR EXCLUSIVO DE COREFLOW PLATFORM ADMIN (100% Viewport Height, Perfil Anclado al Pie) */}
+      <aside className="w-full lg:w-72 lg:h-screen bg-core-navy text-white flex flex-col border-b lg:border-b-0 lg:border-r border-white/10 shrink-0">
+        <div className="h-16 px-5 flex items-center justify-between border-b border-white/10 shrink-0">
+          <CoreFlowLogo variant="horizontal" theme="dark" size="sm" />
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-core-lime text-core-navy">
+            Platform Admin
+          </span>
         </div>
 
-        {/* Pie del Sidebar: Sesión Real de Administrador de Plataforma */}
-        <div className="p-4 border-t border-white/10 bg-[#12142B] space-y-3">
+        <div className="p-4 shrink-0">
+          <div className="rounded-xl bg-[#1E2146] border border-core-violet/40 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-core-cyan">
+              <ShieldCheck className="w-4 h-4 text-core-lime shrink-0" />
+              <span>Administración de la plataforma</span>
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-300 leading-relaxed">
+              Organizaciones, planes, suscripciones, capacidades y auditoría.
+            </p>
+          </div>
+        </div>
+
+        <nav
+          className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 space-y-1"
+          aria-label="Navegación Platform Admin"
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = activeSection === item.id && !showInternalDesignSystem
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setShowInternalDesignSystem(false)
+                  setActiveSection(item.id)
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-core-violet text-white font-semibold shadow-md shadow-core-violet/25'
+                    : 'text-slate-300 hover:text-white hover:bg-white/6'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        {/* Pie del Sidebar Anclado Siempre Visible: Sesión Real de Administrador de Plataforma */}
+        <div className="shrink-0 mt-auto p-4 border-t border-white/10 bg-[#12142B] space-y-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-core-violet to-core-lime flex items-center justify-center text-xs font-extrabold text-core-navy shrink-0">
               PA
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-white truncate">
                 {user?.fullName || 'Administrador de Plataforma'}
               </p>
               <p className="text-[11px] text-core-cyan truncate">{user?.email}</p>
+              <p className="text-[10px] text-core-lime font-semibold truncate mt-0.5">
+                Rol: Superadmin Global · CoreFlow SaaS
+              </p>
             </div>
           </div>
 
@@ -251,22 +281,20 @@ export function PlatformAdminView({
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL DE COREFLOW PLATFORM ADMIN */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white/95 dark:bg-[#171936]/95 border-b border-core-border dark:border-[#282C5A] px-6 flex items-center justify-between gap-4">
+      {/* ÁREA PRINCIPAL DE COREFLOW PLATFORM ADMIN CON SCROLL INDEPENDIENTE */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <header className="h-16 shrink-0 bg-white/95 dark:bg-[#171936]/95 border-b border-core-border dark:border-[#282C5A] px-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <GeometricAccentBar size="sm" />
             <span className="text-sm font-extrabold text-core-navy dark:text-white">
-              CoreFlow Platform Admin · Consola Central de Suscripciones y Planes
+              Consola de suscripciones y planes
             </span>
           </div>
 
           <div className="flex items-center gap-2.5">
             <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-core-violet/10 text-core-violet dark:text-indigo-300 border border-core-violet/25">
               <Database className="w-3.5 h-3.5" />
-              {supabaseStatus?.configured
-                ? 'Conectado a Supabase PostgreSQL'
-                : 'Motor Relacional Persistente Activo'}
+              {isDemoData ? 'Datos de demostración' : 'Datos en vivo'}
             </span>
 
             <button
@@ -280,58 +308,54 @@ export function PlatformAdminView({
           </div>
         </header>
 
-        <main className="flex-1 p-6 lg:p-8 max-w-[1560px] w-full mx-auto space-y-6">
+        <main className="flex-1 min-h-0 overflow-y-auto p-6 lg:p-8">
+          <div className="max-w-[1560px] w-full mx-auto space-y-6">
           {/* KPIs GLOBALES DE PLATAFORMA */}
+          {activeSection === 'organizaciones' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <KpiCard
               title="Organizaciones en Plataforma"
-              scopeBadge="Multi-Tenant RLS"
-              subtitle="Tenants aprovisionados"
+              scopeBadge="Clientes de CoreFlow"
+              subtitle="Registradas"
               value={String(organizations.length)}
-              delta="Aisladas"
               deltaDirection="up"
               accentColor="violet"
               icon={Building2}
-              progress={85}
               breakdown="Identificadores, suscripciones y datos independientes"
             />
             <KpiCard
-              title="Planes en Catálogo BD"
-              scopeBadge="PostgreSQL"
-              subtitle="Tabla plan_catalog"
+              title="Planes en catálogo"
+              scopeBadge="Catálogo"
+              subtitle="Disponibles"
               value={String(plans.length)}
-              delta="Dinámicos"
               deltaDirection="up"
               accentColor="cyan"
               icon={Layers}
-              progress={90}
               breakdown={plans.map((p) => p.displayName).join(' · ')}
             />
             <KpiCard
               title="Usuarios y Membresías"
-              scopeBadge="Supabase Auth"
+              scopeBadge="Cuentas"
               subtitle="Cuentas registradas"
               value={String(platformUsers.userProfiles?.length || 0)}
               delta={`${platformUsers.memberships?.length || 0} vínculos`}
               deltaDirection="up"
               accentColor="lime"
               icon={Users}
-              progress={78}
               breakdown="Perfiles separados de membresías y roles"
             />
             <KpiCard
               title="Eventos de Auditoría Global"
-              scopeBadge="Append-Only"
-              subtitle="Trazabilidad protegida"
+              scopeBadge="Trazabilidad"
+              subtitle="Registrados"
               value={String(globalAuditLogs.length)}
-              delta="Inmutable"
               deltaDirection="up"
               accentColor="blue"
               icon={ShieldCheck}
-              progress={100}
-              breakdown="Trigger trg_protect_audit_logs activo"
+              breakdown="Los registros no se pueden modificar"
             />
           </div>
+          )}
 
           {/* SECCIÓN 1: ORGANIZACIONES Y SUSCRIPCIONES */}
           {activeSection === 'organizaciones' && (
@@ -349,6 +373,10 @@ export function PlatformAdminView({
                       const maxCollab =
                         org.entitlements?.find((e) => e.entitlementKey === 'max_collaborators')
                           ?.valueJson || (planCode === 'business' ? 30 : 15)
+                      const collabPercent = Math.min(
+                        100,
+                        Math.round(((org.activeCollaboratorsCount || 1) / maxCollab) * 100)
+                      )
 
                       return (
                         <div
@@ -371,29 +399,41 @@ export function PlatformAdminView({
                                 </span>
                               </div>
                               <p className="text-xs text-core-muted dark:text-slate-400 mt-0.5">
-                                ID: <code>{org.id}</code> · NIT: {org.taxId} · Sector: {org.sector}
+                                NIT: {org.taxId} · Sector: {org.sector}
                               </p>
                             </div>
                             <StatusBadge status={org.subscription?.status || org.status} />
                           </div>
 
-                          <div className="mt-3 pt-2.5 border-t border-core-border/70 dark:border-[#282C5A] flex flex-wrap items-center justify-between gap-2 text-xs text-core-muted dark:text-slate-300">
-                            <span>
-                              Cuota colaboradores:{' '}
-                              <strong className="text-core-navy dark:text-white">
-                                {org.activeCollaboratorsCount} / {maxCollab}
-                              </strong>
-                            </span>
-                            <span>
-                              Estructura: <strong>{org.branchesCount || 1} sede(s)</strong> ·{' '}
-                              <strong>{org.departmentsCount || 1} área(s)</strong>
-                            </span>
-                            <span>
-                              Vigencia:{' '}
-                              <strong>
-                                {(org.subscription?.validUntil || '2027-01-01').slice(0, 10)}
-                              </strong>
-                            </span>
+                          <div className="mt-3 pt-2.5 border-t border-core-border/70 dark:border-[#282C5A] space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-core-muted dark:text-slate-300">
+                              <span>
+                                Cuota colaboradores:{' '}
+                                <strong className="text-core-navy dark:text-white tabular-nums">
+                                  {org.activeCollaboratorsCount} / {maxCollab} ({collabPercent}%)
+                                </strong>
+                              </span>
+                              <span>
+                                Estructura: <strong>{org.branchesCount || 1} sede(s)</strong> ·{' '}
+                                <strong>{org.departmentsCount || 1} área(s)</strong>
+                              </span>
+                              <span>
+                                Vigencia:{' '}
+                                <strong>
+                                  {org.subscription?.validUntil?.slice(0, 10) || 'Sin fecha'}
+                                </strong>
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  planCode === 'business'
+                                    ? 'bg-gradient-to-r from-core-violet to-core-cyan'
+                                    : 'bg-gradient-to-r from-core-cyan to-core-lime'
+                                }`}
+                                style={{ width: `${collabPercent}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
                       )
@@ -403,7 +443,7 @@ export function PlatformAdminView({
 
                 {/* Formulario para aprovisionar una nueva organización */}
                 <SurfaceCard
-                  title="Aprovisionar Nueva Organización (Tenant Independiente)"
+                  title="Registrar nueva organización"
                   subtitle="Crea una organización con su suscripción inicial, sede principal y administrador organizacional"
                 >
                   <form onSubmit={handleCreateOrgSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
@@ -472,8 +512,8 @@ export function PlatformAdminView({
               {/* Panel Derecho: Administración de Suscripción, Vigencia y Cuotas del Tenant Seleccionado */}
               <div className="xl:col-span-5 space-y-6">
                 <SurfaceCard
-                  title={`Administrar Suscripción: ${selectedOrgForSub}`}
-                  subtitle="Los cambios realizados aquí actualizan organization_subscriptions y organization_entitlements en PostgreSQL"
+                  title={`Administrar suscripción: ${selectedOrgName}`}
+                  subtitle="Revisa el plan antes de guardar: el cambio se aplica de inmediato"
                 >
                   <form onSubmit={handleSaveSubscription} className="space-y-4 mt-2">
                     <div>
@@ -490,7 +530,7 @@ export function PlatformAdminView({
                       >
                         {organizations.map((org) => (
                           <option key={org.id} value={org.id}>
-                            {org.displayName} ({org.id})
+                            {org.displayName}
                           </option>
                         ))}
                       </select>
@@ -528,10 +568,10 @@ export function PlatformAdminView({
                           onChange={(e) => setSubStatus(e.target.value)}
                           className="h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/60 dark:bg-[#101228] px-3 text-xs font-semibold"
                         >
-                          <option value="active">Activa (active)</option>
-                          <option value="trialing">Periodo de prueba (trialing)</option>
-                          <option value="past_due">Pago pendiente (past_due)</option>
-                          <option value="suspended">Suspendida (suspended)</option>
+                          <option value="active">Activa</option>
+                          <option value="trialing">Periodo de prueba</option>
+                          <option value="past_due">Pago pendiente</option>
+                          <option value="suspended">Suspendida</option>
                         </select>
                       </div>
                     </div>
@@ -565,7 +605,7 @@ export function PlatformAdminView({
                     </div>
 
                     <Button type="submit" variant="primary" size="md" className="w-full">
-                      Guardar Suscripción y Cuota en Base de Datos
+                      Guardar suscripción
                     </Button>
                   </form>
                 </SurfaceCard>
@@ -578,8 +618,8 @@ export function PlatformAdminView({
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
               <div className="xl:col-span-7 space-y-4">
                 <SurfaceCard
-                  title="Planes Almacenados en PostgreSQL (plan_catalog)"
-                  subtitle="Los planes y sus matrices de capacidades se consultan dinámicamente desde la base de datos"
+                  title="Catálogo de planes"
+                  subtitle="Límites y capacidades de cada plan"
                 >
                   <div className="space-y-4 mt-2">
                     {plans.map((plan) => (
@@ -615,8 +655,8 @@ export function PlatformAdminView({
                             <strong>{plan.limits.maxBranches}</strong>
                           </div>
                           <div>
-                            <span className="text-core-muted block">Storage Privado</span>
-                            <strong>{Math.round(plan.limits.maxStorageMb / 1024)} GB</strong>
+                            <span className="text-core-muted block">Almacenamiento</span>
+                            <strong>{formatStorageMb(plan.limits.maxStorageMb)}</strong>
                           </div>
                         </div>
 
@@ -630,7 +670,7 @@ export function PlatformAdminView({
                                   : 'bg-slate-200/70 dark:bg-white/5 text-slate-400 line-through'
                               }`}
                             >
-                              {featKey}
+                              {featureLabel(featKey)}
                             </span>
                           ))}
                         </div>
@@ -652,13 +692,13 @@ export function PlatformAdminView({
 
               <div className="xl:col-span-5">
                 <SurfaceCard
-                  title="Crear o Editar Plan en Base de Datos"
+                  title={editingPlan.planCode ? `Editar plan: ${editingPlan.displayName || editingPlan.planCode}` : 'Crear plan'}
                   subtitle="Registra un nuevo plan o modifica las capacidades y límites de un plan existente"
                 >
                   <form onSubmit={handleSavePlan} className="space-y-3.5 mt-2 text-xs">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block font-semibold mb-1">Código (plan_code)</label>
+                        <label className="block font-semibold mb-1">Código del plan</label>
                         <input
                           type="text"
                           required
@@ -735,16 +775,17 @@ export function PlatformAdminView({
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold mb-1">Storage (MB)</label>
+                        <label className="block font-semibold mb-1">Almacenamiento (MB)</label>
                         <input
                           type="number"
-                          value={editingPlan.limits.maxStorageMb}
+                          placeholder="Sin definir"
+                          value={editingPlan.limits.maxStorageMb ?? ''}
                           onChange={(e) =>
                             setEditingPlan({
                               ...editingPlan,
                               limits: {
                                 ...editingPlan.limits,
-                                maxStorageMb: Number(e.target.value),
+                                maxStorageMb: e.target.value === '' ? null : Number(e.target.value),
                               },
                             })
                           }
@@ -762,7 +803,7 @@ export function PlatformAdminView({
                           key={featureKey}
                           className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-core-cloud/60 dark:hover:bg-white/5 cursor-pointer"
                         >
-                          <span>{featureKey}</span>
+                          <span>{featureLabel(featureKey)}</span>
                           <input
                             type="checkbox"
                             checked={Boolean(editingPlan.features[featureKey])}
@@ -781,9 +822,14 @@ export function PlatformAdminView({
                       ))}
                     </div>
 
-                    <Button type="submit" variant="primary" size="md" className="w-full">
-                      Guardar Plan en PostgreSQL (plan_catalog)
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button type="submit" variant="primary" size="md" className="flex-1">
+                        Guardar plan
+                      </Button>
+                      <Button type="button" variant="outline" size="md" onClick={() => setEditingPlan(blankPlan())}>
+                        Limpiar
+                      </Button>
+                    </div>
                   </form>
                 </SurfaceCard>
               </div>
@@ -793,16 +839,16 @@ export function PlatformAdminView({
           {/* SECCIÓN 3: USUARIOS Y ADMINISTRADORES */}
           {activeSection === 'usuarios' && (
             <SurfaceCard
-              title="Cuentas de Plataforma y Administradores Organizacionales"
-              subtitle="Separación estricta entre perfiles autenticados (user_profiles), platform_admins y membresías por organización (organization_members)"
+              title="Usuarios y administradores"
+              subtitle="Equipo de la plataforma y personas de cada organización"
             >
               <div className="overflow-x-auto mt-3">
                 <table className="w-full text-left border-collapse text-xs sm:text-sm">
                   <thead>
                     <tr className="border-b border-core-border dark:border-[#282C5A] text-[11px] font-bold uppercase text-core-muted">
                       <th className="py-3 px-3">Usuario / Nombre</th>
-                      <th className="py-3 px-3">Correo Autenticado</th>
-                      <th className="py-3 px-3">Organización (Tenant)</th>
+                      <th className="py-3 px-3">Correo</th>
+                      <th className="py-3 px-3">Organización</th>
                       <th className="py-3 px-3">Rol Asignado</th>
                       <th className="py-3 px-3">Estado</th>
                     </tr>
@@ -815,9 +861,9 @@ export function PlatformAdminView({
                         </td>
                         <td className="py-3 px-3 font-mono text-xs">{pa.email}</td>
                         <td className="py-3 px-3 font-bold text-core-violet dark:text-core-cyan">
-                          CoreFlow Platform Admin (Global)
+                          Equipo de plataforma
                         </td>
-                        <td className="py-3 px-3">{pa.roleLevel}</td>
+                        <td className="py-3 px-3">{roleLabel(pa.roleLevel)}</td>
                         <td className="py-3 px-3">
                           <StatusBadge status={pa.status} size="sm" />
                         </td>
@@ -831,7 +877,7 @@ export function PlatformAdminView({
                         <td className="py-3 px-3 font-mono text-xs">{mem.userEmail || mem.email}</td>
                         <td className="py-3 px-3">{mem.organizationName}</td>
                         <td className="py-3 px-3 font-semibold text-core-violet dark:text-indigo-300">
-                          {mem.roleCode}
+                          {roleLabel(mem.roleCode)}
                         </td>
                         <td className="py-3 px-3">
                           <StatusBadge status={mem.status} size="sm" />
@@ -847,11 +893,26 @@ export function PlatformAdminView({
           {/* SECCIÓN 4: AUDITORÍA GLOBAL */}
           {activeSection === 'auditoria' && (
             <SurfaceCard
-              title="Registro Global de Auditoría Protegida (Append-Only)"
-              subtitle="Eventos inmutables de seguridad, planes, suscripciones y operaciones multi-tenant"
+              title="Auditoría"
+              subtitle={`${visibleAuditLogs.length} de ${globalAuditLogs.length} eventos. Los registros no se pueden modificar.`}
+              action={
+                <select
+                  value={auditFilter}
+                  onChange={(e) => setAuditFilter(e.target.value)}
+                  aria-label="Filtrar eventos por módulo"
+                  className="h-9 rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/60 dark:bg-[#101228] px-3 text-xs font-semibold"
+                >
+                  <option value="all">Todos los módulos</option>
+                  {auditModules.map((module) => (
+                    <option key={module} value={module}>
+                      {module}
+                    </option>
+                  ))}
+                </select>
+              }
             >
               <div className="space-y-2.5 mt-3">
-                {globalAuditLogs.map((log) => (
+                {visibleAuditLogs.map((log) => (
                   <div
                     key={log.id}
                     className="rounded-xl border border-core-border dark:border-[#282C5A] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
@@ -859,55 +920,81 @@ export function PlatformAdminView({
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-core-violet dark:text-indigo-300">
-                          {log.action}
+                          {auditActionLabel(log.action)}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-core-cloud dark:bg-[#101228] text-[10px] font-semibold">
-                          Tenant: {log.organizationId} · Módulo: {log.module} · Rol:{' '}
-                          {log.actorRoleCode}
+                          {orgNameOf(log.organizationId)} · {log.module}
+                          {log.actorRoleCode ? ` · ${roleLabel(log.actorRoleCode)}` : ''}
                         </span>
                       </div>
                       <p className="text-core-navy dark:text-slate-100 font-medium">
                         {log.summary}
                       </p>
                     </div>
-                    <span className="text-[11px] text-core-muted tabular-nums">
-                      Entidad: {log.entityId}
-                    </span>
                   </div>
                 ))}
               </div>
             </SurfaceCard>
           )}
 
-          {/* SECCIÓN 5: CONFIGURACIÓN DE PLATAFORMA */}
+          {/* SECCIÓN 5: CONFIGURACIÓN DE PLATAFORMA Y CONSULTA INTERNA DEL SISTEMA DE DISEÑO */}
           {activeSection === 'configuracion' && (
-            <SurfaceCard
-              title="Infraestructura SaaS y Políticas de Seguridad Activas"
-              subtitle="Verificación técnica de las 7 migraciones SQL, Row Level Security y Storage privado"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 text-xs">
-                <div className="p-4 rounded-xl border border-core-border dark:border-[#282C5A] space-y-2">
-                  <p className="font-bold text-sm text-core-navy dark:text-white">
-                    Políticas Row Level Security (PostgreSQL)
-                  </p>
-                  <p className="text-core-muted dark:text-slate-300">
-                    Todas las tablas operativas exigen <code>app_has_active_membership(organization_id)</code>{' '}
-                    y validan capacidades directamente en base de datos mediante{' '}
-                    <code>app_org_has_feature(organization_id, feature_key)</code>.
-                  </p>
+            <div className="space-y-6">
+              <SurfaceCard
+                title="Estado de la plataforma"
+                subtitle="Cómo está funcionando este entorno"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-xs">
+                  <div className="p-4 rounded-xl border border-core-border dark:border-[#282C5A] space-y-2">
+                    <p className="font-bold text-sm text-core-navy dark:text-white">
+                      Origen de los datos
+                    </p>
+                    <p className="text-core-muted dark:text-slate-300">
+                      {isDemoData
+                        ? 'Este entorno usa datos de demostración guardados en el navegador. Ningún cambio llega a una base de datos.'
+                        : 'Este entorno está conectado a la base de datos de CoreFlow.'}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl border border-core-border dark:border-[#282C5A] space-y-2">
+                    <p className="font-bold text-sm text-core-navy dark:text-white">
+                      Separación entre organizaciones
+                    </p>
+                    <p className="text-core-muted dark:text-slate-300">
+                      Cada organización ve solo sus propios registros y documentos.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl border border-core-border dark:border-[#282C5A] space-y-2 flex flex-col justify-between">
+                    <div>
+                      <p className="font-bold text-sm text-core-navy dark:text-white">
+                        Sistema de Diseño Institucional (Consulta Interna)
+                      </p>
+                      <p className="text-core-muted dark:text-slate-300 mt-1">
+                        Documentación técnica interna de tokens cromáticos, tipografía, isotipo
+                        vectorial y componentes UI de CoreFlow (excluida de la navegación operativa
+                        de clientes).
+                      </p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowInternalDesignSystem((v) => !v)}
+                    >
+                      {showInternalDesignSystem
+                        ? 'Ocultar documentación visual'
+                        : 'Abrir Sistema de Diseño Interno'}
+                    </Button>
+                  </div>
                 </div>
-                <div className="p-4 rounded-xl border border-core-border dark:border-[#282C5A] space-y-2">
-                  <p className="font-bold text-sm text-core-navy dark:text-white">
-                    Supabase Storage Privado (coreflow-documents)
-                  </p>
-                  <p className="text-core-muted dark:text-slate-300">
-                    Bucket privado configurado con aislamiento obligatorio por prefijo{' '}
-                    <code>{'{organization_id}/{module}/{entity_id}/{filename}'}</code>.
-                  </p>
+              </SurfaceCard>
+
+              {showInternalDesignSystem && (
+                <div className="pt-2 border-t border-core-border dark:border-[#282C5A]">
+                  <DesignSystemView />
                 </div>
-              </div>
-            </SurfaceCard>
+              )}
+            </div>
           )}
+          </div>
         </main>
       </div>
     </div>

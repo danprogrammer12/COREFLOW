@@ -563,7 +563,7 @@ export function DesignSystemView() {
             <thead>
               <tr className="border-b border-core-border dark:border-[#282C5A] text-[11px] font-bold uppercase tracking-wider text-core-muted dark:text-slate-400">
                 <th className="py-3 px-3">Capacidad / Regla</th>
-                <th className="py-3 px-3">CoreFlow Start (1–15 colab.)</th>
+                <th className="py-3 px-3">CoreFlow Starter (1–15 colab.)</th>
                 <th className="py-3 px-3">CoreFlow Business (16–30 colab.)</th>
                 <th className="py-3 px-3">Comportamiento Lógico</th>
               </tr>
