@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { GeometricAccentBar } from '../ui/Primitives'
 
 function buildSmoothPath(points) {
   if (!points.length) return ''
@@ -81,17 +80,9 @@ export function ProcessEvolutionChart({
       {/* Cabecera del Gráfico con Selector de Período Sincronizado */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <GeometricAccentBar size="sm" />
-            <h3 className="text-base font-bold text-core-navy dark:text-white">
-              Evolución de procesos y ritmo operativo
-            </h3>
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-core-violet/10 text-core-violet dark:bg-core-violet/25 dark:text-indigo-300">
-              {periodoData?.shortLabel || 'Período: 7 días'}
-            </span>
-          </div>
+          <h2 className="text-sm font-bold text-core-navy dark:text-white">Ritmo operativo</h2>
           <p className="text-xs text-core-muted dark:text-slate-400 mt-0.5">
-            Métricas de flujo sincronizadas con los módulos de Solicitudes, Tareas y Procesos
+            Solicitudes, tareas y automatizaciones por día
           </p>
         </div>
 
