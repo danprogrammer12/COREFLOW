@@ -4,7 +4,7 @@
  *
  * Reglas de seguridad:
  * 1. Utiliza exclusivamente VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.
- * 2. Jamás acepta ni incluye claves `service_role` en el código cliente.
+ * 2. Jamás acepta ni incluye claves secretas de servidor en el código cliente.
  * 3. Gestiona persistencia de sesión real en el navegador (autoRefreshToken + persistSession).
  */
 
