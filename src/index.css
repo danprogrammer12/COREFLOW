@@ -31,6 +31,17 @@
     radial-gradient(circle at 12% 85%, rgba(101, 69, 232, 0.22) 0%, transparent 48%);
 }
 
+/* Teselado de triángulos del panel de acceso: facetas tonales sin trazo */
+.cf-auth-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208' fill='%23fff'%3E%3Cpath fill-opacity='.05' d='M0 104 60 0l60 104z'/%3E%3Cpath fill-opacity='.018' d='M60 0h120l-60 104z'/%3E%3Cpath fill-opacity='.036' d='M120 104 180 0l60 104z'/%3E%3Cpath fill-opacity='.012' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill-opacity='.028' d='M0 104h120L60 208z'/%3E%3Cpath fill-opacity='.06' d='M60 208l60-104 60 104z'/%3E%3Cpath fill-opacity='.016' d='M120 104h120l-60 104z'/%3E%3Cpath fill-opacity='.042' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E");
+  background-size: 240px 208px;
+  -webkit-mask-image: linear-gradient(315deg, #000 0%, rgba(0, 0, 0, 0.35) 45%, transparent 78%);
+  mask-image: linear-gradient(315deg, #000 0%, rgba(0, 0, 0, 0.35) 45%, transparent 78%);
+}
+
 /* Scrollbar limpio y discreto */
 ::-webkit-scrollbar {
   width: 6px;

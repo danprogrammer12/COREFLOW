@@ -13,7 +13,7 @@ import { SYSTEM_ROLE_TEMPLATES } from '../config/permissionsCatalog.js'
 import { assertSameOrganizationReference } from '../domain/integrityValidator.js'
 import { createImmutableAuditRecord } from '../domain/auditSanitizer.js'
 
-const STORAGE_KEY = 'coreflow_saas_relational_state_v2'
+const STORAGE_KEY = 'coreflow_saas_relational_state_v3'
 
 function createInitialRelationalSeed() {
   const now = '2026-11-10T14:00:00.000Z'
@@ -1124,8 +1124,8 @@ function createInitialRelationalSeed() {
   ]
 
   return {
-    authenticatedUserId: 'usr-business-admin',
-    activeOrganizationId: 'org-principal',
+    authenticatedUserId: null,
+    activeOrganizationId: null,
     planCatalog,
     platformAdmins,
     userProfiles,

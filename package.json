@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:core": "node src/core/__tests__/coreArchitecture.verify.js",
     "test:db": "node --test tests/db/migrations.test.mjs tests/db/baseline-001-007.test.mjs tests/db/security.test.mjs tests/db/rollback.test.mjs",
-    "test:services": "node --test tests/services/backend.test.mjs"
+    "test:services": "node --test tests/services/backend.test.mjs tests/services/provisioning.test.mjs",
+    "test:supabase": "node --test tests/supabase/integration.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

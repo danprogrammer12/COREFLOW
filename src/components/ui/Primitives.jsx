@@ -7,23 +7,19 @@ import {
   TrendingDown,
   ArrowUpRight,
 } from 'lucide-react'
+import { CoreFlowIsotipo } from '../brand/CoreFlowLogo'
 
 /**
- * Acento geométrico diagonal de 3 piezas (firma visual de CoreFlow)
+ * Símbolo institucional de CoreFlow unificado (usa el recurso vectorial oficial CoreFlowIsotipo
+ * sin reconstruir geometrías paralelas ni alterar proporciones)
  */
-export function GeometricAccentBar({ size = 'sm', className = '' }) {
-  const dims = size === 'sm' ? 'w-6 h-3.5' : 'w-8 h-4'
+export function GeometricAccentBar({ size = 'sm', mono = null, className = '' }) {
+  const dims = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-7 h-7' : 'w-6 h-6'
   return (
-    <svg
-      viewBox="0 0 36 20"
-      fill="none"
+    <CoreFlowIsotipo
+      mono={mono}
       className={`shrink-0 select-none ${dims} ${className}`}
-      aria-hidden="true"
-    >
-      <path d="M2 10L8 2H14L8 10L14 18H8L2 10Z" fill="#08C9E8" />
-      <path d="M13 2H21L27 9.5H19L13 2Z" fill="#6545E8" />
-      <path d="M19 10.5H27L21 18H13L19 10.5Z" fill="#A6E91C" />
-    </svg>
+    />
   )
 }
 

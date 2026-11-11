@@ -62,6 +62,31 @@
 
   /* Tipografía */
   --cf-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --cf-weight-regular: 400;
+  --cf-weight-medium: 500;
+  --cf-weight-semibold: 600;
+  --cf-weight-bold: 700;
+  --cf-weight-extrabold: 800;
+
+  /* Espaciado (múltiplos de 4 px) */
+  --cf-space-1: 4px;
+  --cf-space-2: 8px;
+  --cf-space-3: 12px;
+  --cf-space-4: 16px;
+  --cf-space-5: 20px;
+  --cf-space-6: 24px;
+  --cf-space-8: 32px;
+  --cf-space-10: 40px;
+  --cf-space-12: 48px;
+  --cf-space-16: 64px;
+
+  /* Controles: borde con contraste 3:1 sobre blanco */
+  --cf-border-control: #8B93AE;
+
+  /* Transiciones */
+  --cf-duration-fast: 150ms;
+  --cf-duration-base: 220ms;
+  --cf-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Vista Alternativa (Resumen Ejecutivo / Modo Oscuro de Marca) */

@@ -1,46 +1,100 @@
-import React, { useState } from 'react'
-import {
-  ArrowRight,
-  Lock,
-  Mail,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  ArrowLeft,
-  ShieldCheck,
-  Building2,
-  Layers,
-  AlertCircle,
-} from 'lucide-react'
-import { CoreFlowLogo, DiagonalBrandCanvas } from '../components/brand/CoreFlowLogo'
-import { Button, GeometricAccentBar } from '../components/ui/Primitives'
+import React, { useEffect, useRef, useState } from 'react'
+import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { CoreFlowLogo } from '../components/brand/CoreFlowLogo'
+import { Button } from '../components/ui/Primitives'
 
-const PROVISIONED_CONTEXT_ACCOUNTS = [
-  {
-    id: 'platform_admin',
-    badge: 'Contexto A · Platform Admin',
-    label: 'Administrador Global de Plataforma',
-    email: 'platform.admin@coreflow.app',
-    desc: 'Consola global: gestión de organizaciones, planes en PostgreSQL, suscripciones y auditoría.',
-    accent: 'border-core-lime/40 bg-core-lime/10 text-core-lime',
-  },
-  {
-    id: 'starter_admin',
-    badge: 'Contexto B · CoreFlow Starter',
-    label: 'Soluciones Ágiles del Caribe (Starter)',
-    email: 'admin.starter@unidadpyme.co',
-    desc: 'Organización con suscripción Starter (1–15 colab.): flujo directo y datos propios aislados.',
-    accent: 'border-core-cyan/40 bg-core-cyan/10 text-core-cyan',
-  },
-  {
-    id: 'business_admin',
-    badge: 'Contexto C · CoreFlow Business',
-    label: 'Grupo Corporativo Andino (Business)',
-    email: 'admin.business@corporativoprincipal.co',
-    desc: 'Organización con suscripción Business (16–30 colab.): departamentos, aprobaciones multinivel y KPIs por área.',
-    accent: 'border-core-violet/50 bg-core-violet/20 text-indigo-300',
-  },
+const DEMO_CONTEXTS = [
+  { id: 'platform_admin', label: 'Platform Admin', email: 'platform.admin@coreflow.app' },
+  { id: 'starter_admin', label: 'Starter', email: 'admin.starter@unidadpyme.co' },
+  { id: 'business_admin', label: 'Business', email: 'admin.business@corporativoprincipal.co' },
 ]
+
+const AUTH_ERROR_COPY = {
+  AUTH_INVALID_CREDENTIALS: 'El correo o la contraseña no son correctos. Revísalos e inténtalo de nuevo.',
+  AUTH_NO_ACTIVE_MEMBERSHIP: 'Esta cuenta no tiene una organización activa. Contacta a tu administrador.',
+  BACKEND_UNAVAILABLE: 'No pudimos conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.',
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const FOCUS_OUTLINE =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-core-violet'
+
+function readableError(result) {
+  if (AUTH_ERROR_COPY[result?.code]) return AUTH_ERROR_COPY[result.code]
+  const message = String(result?.error || result?.message || '').replace(/^[A-Z_]+:\s*/, '')
+  return message || 'No fue posible iniciar sesión. Inténtalo de nuevo.'
+}
+
+function validateEmail(value) {
+  if (!value.trim()) return 'Escribe tu correo electrónico.'
+  if (!EMAIL_PATTERN.test(value.trim())) return 'Revisa el formato del correo, por ejemplo nombre@empresa.com.'
+  return null
+}
+
+function AuthField({ id, label, error, trailing, inputRef, ...inputProps }) {
+  const errorId = `${id}-error`
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-core-navy">
+        {label}
+      </label>
+      <div className="relative mt-2">
+        <input
+          id={id}
+          ref={inputRef}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          className={`h-11 w-full rounded-lg border bg-white px-3.5 text-[15px] text-core-navy transition-colors duration-150 hover:border-core-navy focus:border-core-violet focus:outline-none focus:ring-1 focus:ring-core-violet ${
+            error ? 'border-red-600' : 'border-[color:var(--cf-border-control)]'
+          } ${trailing ? 'pr-12' : ''}`}
+          {...inputProps}
+        />
+        {trailing}
+      </div>
+      {error && (
+        <p id={errorId} className="mt-1.5 text-[13px] text-red-700">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function SubmitButton({ busy, busyLabel, children }) {
+  return (
+    <Button
+      type="submit"
+      variant="primary"
+      size="lg"
+      className={`w-full ${FOCUS_OUTLINE}`}
+      disabled={busy}
+      aria-busy={busy}
+    >
+      {busy ? (
+        <span className="inline-flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+          {busyLabel}
+        </span>
+      ) : (
+        children
+      )}
+    </Button>
+  )
+}
+
+function BackToLogin({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded text-sm font-medium text-core-violet underline-offset-4 hover:underline ${FOCUS_OUTLINE}`}
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      Volver al inicio de sesión
+    </button>
+  )
+}
 
 export function AuthView({ onAuthenticate, supabaseStatus }) {
   const [mode, setMode] = useState('login') // 'login' | 'recover' | 'recover-sent'
@@ -48,302 +102,256 @@ export function AuthView({ onAuthenticate, supabaseStatus }) {
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [authError, setAuthError] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingContext, setPendingContext] = useState(null)
+
+  const headingRef = useRef(null)
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
+  const isFirstRender = useRef(true)
+
+  const demoAccessEnabled = !supabaseStatus?.configured
+  const busy = isSubmitting || Boolean(pendingContext)
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    headingRef.current?.focus()
+  }, [mode])
+
+  const changeMode = (nextMode) => {
+    setFieldErrors({})
+    setAuthError(null)
+    setMode(nextMode)
+  }
+
+  const authenticate = async (credentials) => {
+    const res = await onAuthenticate?.(credentials)
+    if (res && res.ok === false) setAuthError(readableError(res))
+  }
 
   const handleSubmitLogin = async (e) => {
     e.preventDefault()
+    const errors = {
+      email: validateEmail(email),
+      password: password ? null : 'Escribe tu contraseña.',
+    }
+    setFieldErrors(errors)
     setAuthError(null)
+    if (errors.email) return emailRef.current?.focus()
+    if (errors.password) return passwordRef.current?.focus()
+
     setIsSubmitting(true)
     try {
-      const res = await onAuthenticate?.({ email, password })
-      if (res && res.ok === false) {
-        setAuthError(res.error || 'No fue posible iniciar sesión con las credenciales indicadas.')
-      }
+      await authenticate({ email: email.trim(), password })
     } catch (err) {
-      setAuthError(err.message || 'Error de autenticación.')
+      setAuthError(readableError(err))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleQuickAccountSelect = async (accountEmail) => {
-    setEmail(accountEmail)
-    setPassword('CoreFlow#2026')
+  const handleDemoContext = async (context) => {
+    setFieldErrors({})
     setAuthError(null)
-    const res = await onAuthenticate?.({
-      email: accountEmail,
-      password: 'CoreFlow#2026',
-    })
-    if (res && res.ok === false) {
-      setAuthError(res.error)
+    setPendingContext(context.id)
+    try {
+      await authenticate({ email: context.email, password: '' })
+    } catch (err) {
+      setAuthError(readableError(err))
+    } finally {
+      setPendingContext(null)
     }
   }
 
   const handleSubmitRecover = (e) => {
     e.preventDefault()
-    setMode('recover-sent')
+    const error = validateEmail(email)
+    setFieldErrors({ email: error })
+    if (error) return emailRef.current?.focus()
+    changeMode('recover-sent')
   }
 
+  const headingClass = 'text-[28px] font-bold leading-tight tracking-tight text-core-navy caret-transparent focus:outline-none'
+
   return (
-    <DiagonalBrandCanvas className="min-h-screen flex flex-col justify-between p-4 sm:p-8">
-      {/* Cabecera Superior */}
-      <div className="w-full max-w-6xl mx-auto flex items-center justify-between py-2">
-        <div className="flex items-center gap-2 text-xs text-slate-300">
-          <GeometricAccentBar size="sm" />
-          <span>CoreFlow SaaS · Autenticación Multi-Tenant y Resolución de Contexto</span>
-        </div>
-        <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-semibold text-core-cyan">
-          {supabaseStatus?.configured
-            ? 'Supabase Auth Activo'
-            : 'Persistencia Relacional Multi-Tenant Activa'}
-        </span>
-      </div>
+    <div className="grid min-h-screen grid-cols-1 bg-white selection:bg-core-violet selection:text-white lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-core-navy p-12 text-white lg:flex xl:p-16">
+        <div className="cf-auth-pattern" aria-hidden="true" />
+        <CoreFlowLogo variant="horizontal" theme="dark" size="md" className="relative" />
 
-      {/* Contenedor Central */}
-      <div className="w-full max-w-6xl mx-auto my-auto grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-white/15 bg-[#13152E]/95 backdrop-blur-xl shadow-2xl">
-        {/* Columna Izquierda: Identidad Corporativa CoreFlow + Acceso a las 3 Cuentas Aprovisionadas */}
-        <div className="lg:col-span-7 p-7 sm:p-10 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-white/10">
-          <div className="space-y-5">
-            <CoreFlowLogo variant="horizontal" theme="dark" size="lg" showSlogan />
-
-            <div className="pt-2 space-y-2.5 max-w-xl">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-core-violet/20 border border-core-violet/40 text-xs font-semibold text-core-cyan">
-                Plataforma Modular de Gestión Organizacional
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-                Tres contextos independientes sobre una arquitectura SaaS unificada.
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Cada sesión autenticada resuelve su propio contexto de autorización, suscripción y
-                aislamiento de datos en PostgreSQL sin compartir información entre organizaciones.
-              </p>
-            </div>
-
-            {/* Tarjetas de las 3 Cuentas Diferenciadas (Sección 2 y 5) */}
-            <div className="pt-2 space-y-2.5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Cuentas aprovisionadas para validación de los 3 contextos:
-              </p>
-              <div className="grid grid-cols-1 gap-2.5">
-                {PROVISIONED_CONTEXT_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    onClick={() => handleQuickAccountSelect(acc.email)}
-                    className="w-full text-left p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-core-violet/50 transition-all group flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border ${acc.accent}`}
-                        >
-                          {acc.badge}
-                        </span>
-                        <span className="text-xs font-bold text-white">{acc.label}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-300">{acc.desc}</p>
-                      <p className="text-[11px] font-mono text-core-cyan">{acc.email}</p>
-                    </div>
-                    <span className="px-3 py-1.5 rounded-xl bg-core-violet text-white text-xs font-semibold shrink-0 group-hover:bg-core-blue transition-colors inline-flex items-center gap-1.5 self-start sm:self-center">
-                      <span>Iniciar sesión</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 mt-6 border-t border-white/10 grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs font-bold text-core-cyan uppercase tracking-wider">Organiza</p>
-              <p className="text-xs text-slate-400 mt-0.5">Clientes, tareas y documentos</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Conecta</p>
-              <p className="text-xs text-slate-400 mt-0.5">Equipos, áreas y solicitudes</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-core-lime uppercase tracking-wider">Evoluciona</p>
-              <p className="text-xs text-slate-400 mt-0.5">Procesos e indicadores</p>
-            </div>
-          </div>
+        <div className="relative">
+          <p className="text-[clamp(2.75rem,4.4vw,4.25rem)] font-extrabold leading-[1.04] tracking-[-0.03em]">
+            Organiza.
+            <br />
+            Conecta.
+            <br />
+            <span className="text-core-lime">Evoluciona.</span>
+          </p>
+          <p className="mt-6 max-w-[38ch] text-base leading-relaxed text-slate-300">
+            Clientes, equipos y procesos de tu organización en una sola plataforma.
+          </p>
         </div>
 
-        {/* Columna Derecha: Formulario de Inicio de Sesión / Recuperación */}
-        <div className="lg:col-span-5 p-8 sm:p-10 bg-[#171936] flex flex-col justify-center">
+        <p className="relative text-[13px] text-slate-400">Desarrollado por Webcore</p>
+      </aside>
+
+      <main className="flex items-center justify-center px-6 py-12 sm:px-10">
+        <div className="w-full max-w-[400px]">
+          <div className="mb-10 lg:hidden">
+            <CoreFlowLogo variant="horizontal" theme="light" size="md" showSlogan />
+          </div>
+
           {mode === 'login' && (
-            <form onSubmit={handleSubmitLogin} className="space-y-5">
-              <div>
-                <CoreFlowLogo variant="horizontal" theme="dark" size="sm" />
-                <h2 className="mt-5 text-2xl font-bold text-white">Inicia sesión</h2>
-                <p className="mt-1 text-xs text-slate-400">
-                  Ingresa tus credenciales corporativas o selecciona una de las 3 cuentas aprovisionadas
-                </p>
-              </div>
+            <>
+              <h1 ref={headingRef} tabIndex={-1} className={headingClass}>
+                Inicia sesión
+              </h1>
+              <p className="mt-2 text-[15px] text-core-muted">Accede al espacio de trabajo de tu organización.</p>
 
               {authError && (
-                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-400/40 text-xs text-rose-200 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div role="alert" className="mt-6 flex items-start gap-2.5 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <span>{authError}</span>
                 </div>
               )}
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Correo electrónico corporativo
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="usuario@organizacion.co"
-                      className="h-10 w-full rounded-xl border border-white/15 bg-[#101228] pl-10 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/30"
-                    />
-                  </div>
-                </div>
+              <form onSubmit={handleSubmitLogin} noValidate className="mt-8 space-y-5">
+                <AuthField
+                  id="auth-email"
+                  label="Correo electrónico"
+                  type="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  error={fieldErrors.email}
+                  inputRef={emailRef}
+                />
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Contraseña
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type={showPass ? 'text' : 'password'}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Ingresa tu contraseña"
-                      className="h-10 w-full rounded-xl border border-white/15 bg-[#101228] pl-10 pr-10 text-sm text-white placeholder:text-slate-500 focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/30"
-                    />
+                <AuthField
+                  id="auth-password"
+                  label="Contraseña"
+                  type={showPass ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  error={fieldErrors.password}
+                  inputRef={passwordRef}
+                  trailing={
                     <button
                       type="button"
-                      onClick={() => setShowPass(!showPass)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                      aria-label="Mostrar u ocultar contraseña"
+                      onClick={() => setShowPass((v) => !v)}
+                      aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-pressed={showPass}
+                      className={`absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-lg text-core-muted transition-colors duration-150 hover:text-core-navy ${FOCUS_OUTLINE}`}
                     >
-                      {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPass ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
                     </button>
+                  }
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-core-navy">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className={`h-4 w-4 rounded accent-core-violet ${FOCUS_OUTLINE}`}
+                    />
+                    Mantener sesión activa
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => changeMode('recover')}
+                    className={`rounded font-medium text-core-violet underline-offset-4 hover:underline ${FOCUS_OUTLINE}`}
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+
+                <SubmitButton busy={isSubmitting} busyLabel="Verificando…">
+                  Ingresar
+                </SubmitButton>
+              </form>
+
+              {demoAccessEnabled && (
+                <div className="mt-8 border-t border-core-border pt-6">
+                  <p id="auth-demo-label" className="text-[13px] text-core-muted">
+                    Entrar a un entorno de demostración
+                  </p>
+                  <div role="group" aria-labelledby="auth-demo-label" className="mt-3 grid grid-cols-3 gap-2">
+                    {DEMO_CONTEXTS.map((context) => (
+                      <button
+                        key={context.id}
+                        type="button"
+                        disabled={busy}
+                        aria-busy={pendingContext === context.id}
+                        onClick={() => handleDemoContext(context)}
+                        className={`flex h-10 items-center justify-center rounded-lg border border-core-border px-1 text-[13px] font-medium text-core-navy transition-colors duration-150 hover:border-core-violet hover:text-core-violet disabled:opacity-50 ${FOCUS_OUTLINE}`}
+                      >
+                        {pendingContext === context.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-label="Entrando" />
+                        ) : (
+                          context.label
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <label className="inline-flex items-center gap-2 text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-white/20 bg-[#101228] text-core-violet focus:ring-core-violet"
-                  />
-                  <span>Mantener sesión activa</span>
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => setMode('recover')}
-                  className="font-semibold text-core-cyan hover:underline"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                icon={ArrowRight}
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Verificando sesión...' : 'Ingresar a la plataforma'}
-              </Button>
-
-              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Desarrollado por Webcore</span>
-                <span className="inline-flex items-center gap-1 text-core-lime font-semibold">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Aislamiento RLS Activo
-                </span>
-              </div>
-            </form>
+              )}
+            </>
           )}
 
           {mode === 'recover' && (
-            <form onSubmit={handleSubmitRecover} className="space-y-5">
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-core-cyan hover:underline mb-4"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Volver al inicio de sesión
-                </button>
-                <h2 className="text-2xl font-bold text-white">Recuperar contraseña</h2>
-                <p className="mt-1 text-xs text-slate-400">
-                  Ingresa tu correo registrado y enviaremos las instrucciones para restablecer tu acceso.
-                </p>
-              </div>
+            <>
+              <BackToLogin onClick={() => changeMode('login')} />
+              <h1 ref={headingRef} tabIndex={-1} className={`mt-6 ${headingClass}`}>
+                Recuperar contraseña
+              </h1>
+              <p className="mt-2 text-[15px] text-core-muted">
+                Escribe el correo de tu cuenta para restablecer el acceso.
+              </p>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Correo electrónico registrado
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="usuario@organizacion.co"
-                    className="h-10 w-full rounded-xl border border-white/15 bg-[#101228] pl-10 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-core-violet focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <Button type="submit" variant="primary" size="lg" icon={ArrowRight} className="w-full">
-                Enviar enlace de recuperación
-              </Button>
-            </form>
+              <form onSubmit={handleSubmitRecover} noValidate className="mt-8 space-y-5">
+                <AuthField
+                  id="auth-recover-email"
+                  label="Correo electrónico"
+                  type="email"
+                  autoComplete="username"
+                  inputMode="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  error={fieldErrors.email}
+                  inputRef={emailRef}
+                />
+                <SubmitButton busy={false}>Enviar instrucciones</SubmitButton>
+              </form>
+            </>
           )}
 
           {mode === 'recover-sent' && (
-            <div className="space-y-5 text-center py-4">
-              <div className="w-12 h-12 rounded-2xl bg-core-lime/20 text-core-lime flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
+            <>
+              <h1 ref={headingRef} tabIndex={-1} className={headingClass}>
+                Revisa tu correo
+              </h1>
+              <p className="mt-2 text-[15px] leading-relaxed text-core-muted">
+                Si <span className="font-medium text-core-navy">{email.trim()}</span> tiene una cuenta, recibirás las
+                instrucciones para restablecer tu contraseña.
+              </p>
+              <div className="mt-8">
+                <BackToLogin onClick={() => changeMode('login')} />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Instrucciones enviadas</h2>
-                <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-                  Hemos enviado un enlace de restablecimiento a{' '}
-                  <strong className="text-white">{email}</strong>.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                onClick={() => setMode('login')}
-                className="w-full"
-              >
-                Regresar al acceso
-              </Button>
-            </div>
+            </>
           )}
-        </div>
-      </div>
 
-      <div className="w-full max-w-6xl mx-auto text-center text-[11px] text-slate-400 py-1">
-        CoreFlow · Organiza. Conecta. Evoluciona. · Plataforma SaaS Multi-Tenant
-      </div>
-    </DiagonalBrandCanvas>
+          <p className="mt-10 text-[13px] text-core-muted lg:hidden">Desarrollado por Webcore</p>
+        </div>
+      </main>
+    </div>
   )
 }

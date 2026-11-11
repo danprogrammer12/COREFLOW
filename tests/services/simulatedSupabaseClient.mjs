@@ -129,7 +129,7 @@ class QueryBuilder {
   }
 }
 
-export function createSimulatedClient(db, { passwords = {} } = {}) {
+export function createSimulatedClient(db, { passwords = {}, serviceRole = false } = {}) {
   const listeners = new Set()
   const client = {
     currentUser: null,
@@ -139,7 +139,7 @@ export function createSimulatedClient(db, { passwords = {} } = {}) {
         db,
         client.currentUser?.id ?? null,
         async (tx) => (await tx.query(sql, params)).rows,
-        { role: client.currentUser ? 'authenticated' : 'anon' }
+        { role: serviceRole ? 'service_role' : client.currentUser ? 'authenticated' : 'anon' }
       )
     },
 
@@ -174,6 +174,33 @@ export function createSimulatedClient(db, { passwords = {} } = {}) {
     },
 
     auth: {
+      admin: {
+        async listUsers({ page = 1, perPage = 50 } = {}) {
+          const { rows } = await db.query(
+            `select id, email, raw_user_meta_data as user_metadata from auth.users
+              order by created_at, id limit $1 offset $2`,
+            [perPage, (page - 1) * perPage]
+          )
+          return { data: { users: rows }, error: null }
+        },
+        async createUser({ email, password, user_metadata: metadata = {} }) {
+          const { rows } = await db.query(
+            `insert into auth.users (email, raw_user_meta_data) values ($1, $2)
+             returning id, email, raw_user_meta_data as user_metadata`,
+            [email, metadata]
+          )
+          passwords[email] = password
+          return { data: { user: rows[0] }, error: null }
+        },
+        async updateUserById(id, { password, user_metadata: metadata }) {
+          const { rows } = await db.query(`select email from auth.users where id = $1`, [id])
+          if (password !== undefined) passwords[rows[0].email] = password
+          if (metadata !== undefined) {
+            await db.query(`update auth.users set raw_user_meta_data = $2 where id = $1`, [id, metadata])
+          }
+          return { data: { user: { id } }, error: null }
+        },
+      },
       async signInWithPassword({ email, password }) {
         const { rows } = await db.query(`select id, email from auth.users where lower(email) = lower($1)`, [email])
         if (!rows[0] || passwords[rows[0].email] !== password) {

@@ -45,6 +45,15 @@ function runTestSuite() {
   // T1: Aislamiento Multi-Tenant (Membresía activa obligatoria)
   // -------------------------------------------------------------------------
   {
+    assert.equal(
+      organizationService.getSessionSummary().isAuthenticated,
+      false,
+      'T1: La aplicación debe arrancar sin sesión iniciada.'
+    )
+    organizationService.authenticateAccount({
+      email: 'admin.business@corporativoprincipal.co',
+    })
+
     const session = organizationService.getSessionSummary()
     const accessibleIds = session.accessibleOrganizations.map((o) => o.id)
     assert.deepEqual(
