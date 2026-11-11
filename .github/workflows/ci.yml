@@ -1,0 +1,43 @@
+name: CoreFlow CI — Validación, Pruebas y Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  verify-and-build:
+    name: Verificar Arquitectura, Migraciones y Compilar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar ausencia de service_role o secretos en código cliente
+        run: |
+          if grep -RIn "service_role" src/; then
+            echo "ERROR DE SEGURIDAD: Se detectó referencia a service_role dentro de src/"
+            exit 1
+          fi
+
+      - name: Ejecutar suite automatizada de arquitectura, aislamiento y permisos
+        run: npm run test:core
+
+      - name: Compilar bundle de producción (Vite Build)
+        run: npm run build
