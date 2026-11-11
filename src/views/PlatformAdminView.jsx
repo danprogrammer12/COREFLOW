@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { CoreFlowLogo, CoreFlowIsotipo } from '../components/brand/CoreFlowLogo'
 import { DesignSystemView } from './DesignSystemView'
+import { LegalFooter } from '../components/privacy/LegalFooter'
 import {
   Button,
   KpiCard,
@@ -994,6 +995,7 @@ export function PlatformAdminView({
               )}
             </div>
           )}
+          <LegalFooter className="pt-5 border-t border-core-border dark:border-[#282C5A]" />
           </div>
         </main>
       </div>

@@ -20,9 +20,11 @@ import {
   Building2,
   Check,
   SlidersHorizontal,
+  ShieldCheck,
 } from 'lucide-react'
 import { CoreFlowLogo, CoreFlowIsotipo } from '../brand/CoreFlowLogo'
 import { EDITION_RULES } from '../../data/demoStore'
+import { LegalFooter } from '../privacy/LegalFooter'
 
 export function AppShell({
   activeView,
@@ -113,7 +115,7 @@ export function AppShell({
   // Navegación diferenciada según la suscripción activa (StarterLayout vs BusinessLayout)
   const navItems = isBusiness
     ? [
-        { id: 'dashboard', label: 'Resumen Ejecutivo', icon: Home, badge: null },
+        { id: 'dashboard', label: 'Inicio', icon: Home, badge: null },
         { id: 'clientes', label: 'Cuentas y Clientes', icon: Users, badge: String(counts.clientes) },
         { id: 'comercial', label: 'Pipeline Comercial', icon: Briefcase, badge: String(counts.comercial) },
         { id: 'solicitudes', label: 'Solicitudes', icon: Inbox, badge: String(counts.solicitudes) },
@@ -124,7 +126,7 @@ export function AppShell({
         { id: 'configuracion', label: 'Departamentos y Roles', icon: Settings, badge: null },
       ]
     : [
-        { id: 'dashboard', label: 'Inicio Operativo', icon: Home, badge: null },
+        { id: 'dashboard', label: 'Inicio', icon: Home, badge: null },
         { id: 'clientes', label: 'Clientes', icon: Users, badge: String(counts.clientes) },
         { id: 'solicitudes', label: 'Solicitudes Directas', icon: Inbox, badge: String(counts.solicitudes) },
         { id: 'tareas', label: 'Tareas del Equipo', icon: CheckSquare, badge: String(counts.tareas) },
@@ -134,17 +136,10 @@ export function AppShell({
         { id: 'configuracion', label: 'Equipo y Suscripción', icon: Settings, badge: null },
       ]
 
+  // La barra superior repite el nombre del menú para que la ubicación sea inequívoca.
   const viewLabels = {
-    dashboard: isBusiness ? 'Dashboard Corporativo y SLA' : 'Centro de Operación Directa',
-    clientes: isBusiness ? 'Directorio de Cuentas Corporativas' : 'Cartera de Clientes',
-    comercial: isBusiness ? 'Pipeline Comercial y Validación' : 'Oportunidades Comerciales',
-    solicitudes: isBusiness ? 'Solicitudes y Aprobaciones Multinivel' : 'Seguimiento Directo de Solicitudes',
-    procesos: isBusiness ? 'Automatizaciones entre Departamentos' : 'Reglas y Avisos Operativos',
-    tareas: isBusiness ? 'Control de Tareas por Departamento' : 'Agenda de Tareas del Equipo',
-    documentos: isBusiness ? 'Repositorio y Aprobación Documental' : 'Archivo Documental Centralizado',
-    reportes: ' Analítica Comparativa y Cumplimiento',
-    configuracion: isBusiness ? 'Gobierno Organizacional, Sedes y Roles' : 'Equipo y Parámetros Starter',
-    'design-system': 'Sistema de Diseño Institucional (Consulta Interna)',
+    ...Object.fromEntries(navItems.map((item) => [item.id, item.label])),
+    'design-system': 'Sistema de diseño',
   }
 
   const unreadCount = notifications.filter((n) => n.unread).length
@@ -313,6 +308,13 @@ export function AppShell({
                   <Settings className="w-3.5 h-3.5 text-core-cyan" />
                   <span>Configuración de organización</span>
                 </button>
+                <a
+                  href="#/legal/privacidad"
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-core-cyan" />
+                  <span>Privacidad y cookies</span>
+                </a>
                 <button
                   type="button"
                   onClick={() => {
@@ -648,7 +650,10 @@ export function AppShell({
 
         {/* C. ÁREA DE CONTENIDO PRINCIPAL CON SCROLL INDEPENDIENTE */}
         <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10">
-          <div className="max-w-[1600px] w-full mx-auto">{children}</div>
+          <div className="max-w-[1600px] w-full mx-auto">
+            {children}
+            <LegalFooter className="mt-10 pt-5 border-t border-core-border dark:border-[#282C5A]" />
+          </div>
         </main>
 
         {/* BARRA DE NAVEGACIÓN COMPACTA MÓVIL (Sin enlace a Sistema UI) */}

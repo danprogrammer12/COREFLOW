@@ -7,6 +7,20 @@ import { AuthView } from './views/AuthView'
 import { PlatformAdminView } from './views/PlatformAdminView'
 import { ModulesPreviewView } from './views/ModulesPreviewView'
 import { ToastNotification } from './components/ui/Primitives'
+import { PrivacyProvider, usePrivacy } from './components/privacy/PrivacyProvider'
+import { LegalCenterView } from './views/LegalCenterView'
+
+const THEME_KEY = 'coreflow_ui_theme'
+
+function useHashRoute() {
+  const [hash, setHash] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash))
+  useEffect(() => {
+    const onChange = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', onChange)
+    return () => window.removeEventListener('hashchange', onChange)
+  }, [])
+  return hash
+}
 import {
   NewRequestModal,
   RequestDetailDrawer,
@@ -23,6 +37,7 @@ function CoreFlowWorkspace() {
     authenticateAccount,
     signOut,
     requestPasswordReset,
+    submitPrivacyRequest,
     dataError,
     approvalQueue,
     getDocumentUrl,
@@ -71,7 +86,10 @@ function CoreFlowWorkspace() {
   } = useCoreFlow()
 
   const [activeView, setActiveView] = useState('dashboard')
-  const [darkMode, setDarkMode] = useState(false)
+  const privacy = usePrivacy()
+  const route = useHashRoute()
+  // El tema solo se recuerda con consentimiento funcional.
+  const [darkMode, setDarkMode] = useState(() => privacy.readPreference(THEME_KEY) === 'dark')
   const [searchQuery, setSearchQuery] = useState('')
   const [showAuthScreen, setShowAuthScreen] = useState(false)
   const [newRequestOpen, setNewRequestOpen] = useState(false)
@@ -87,6 +105,10 @@ function CoreFlowWorkspace() {
       root.removeAttribute('data-theme')
     }
   }, [darkMode])
+
+  useEffect(() => {
+    privacy.writePreference(THEME_KEY, darkMode ? 'dark' : 'light')
+  }, [darkMode, privacy])
 
   const selectedRequest = requests.find((r) => r.id === selectedRequestId) || null
 
@@ -112,8 +134,8 @@ function CoreFlowWorkspace() {
     return res
   }
 
-  const handleAuthenticate = async ({ email, password }) => {
-    const res = await authenticateAccount({ email, password })
+  const handleAuthenticate = async (credentials) => {
+    const res = await authenticateAccount(credentials)
     if (res.ok) {
       setShowAuthScreen(false)
       setSelectedRequestId(null)
@@ -130,6 +152,11 @@ function CoreFlowWorkspace() {
     }
     setSelectedRequestId(null)
     setShowAuthScreen(true)
+  }
+
+  // 0. Centro legal: accesible con o sin sesión
+  if (route.startsWith('#/legal')) {
+    return <LegalCenterView slug={route.split('/')[2] || 'privacidad'} onSubmitPrivacyRequest={submitPrivacyRequest} />
   }
 
   // 1. Pantalla de Autenticación real cuando no hay sesión o el usuario solicita cambiar cuenta
@@ -298,10 +325,18 @@ function CoreFlowWorkspace() {
   )
 }
 
+/** El consentimiento envuelve toda la aplicación; con datos reales puede registrarse en el servidor. */
+function PrivacyLayer({ children }) {
+  const { recordPrivacyConsent } = useCoreFlow()
+  return <PrivacyProvider onRecord={recordPrivacyConsent}>{children}</PrivacyProvider>
+}
+
 export default function App() {
   return (
     <CoreFlowProvider>
-      <CoreFlowWorkspace />
+      <PrivacyLayer>
+        <CoreFlowWorkspace />
+      </PrivacyLayer>
     </CoreFlowProvider>
   )
 }

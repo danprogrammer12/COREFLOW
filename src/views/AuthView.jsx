@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { CoreFlowLogo } from '../components/brand/CoreFlowLogo'
+import { LegalFooter } from '../components/privacy/LegalFooter'
 import { Button } from '../components/ui/Primitives'
 
 const DEMO_CONTEXTS = [
@@ -148,7 +149,7 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
 
     setIsSubmitting(true)
     try {
-      await authenticate({ email: email.trim(), password })
+      await authenticate({ email: email.trim(), password, remember: rememberMe })
     } catch (err) {
       setAuthError(readableError(err))
     } finally {
@@ -174,7 +175,12 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
     const error = validateEmail(email)
     setFieldErrors({ email: error })
     if (error) return emailRef.current?.focus()
-    const res = await onRequestPasswordReset?.(email.trim())
+    if (typeof onRequestPasswordReset !== 'function') {
+      setAuthError('En el entorno de demostración no se envían correos. Usa los accesos de demostración para explorar CoreFlow.')
+      return
+    }
+    setAuthError(null)
+    const res = await onRequestPasswordReset(email.trim())
     if (res?.ok === false) return setAuthError(readableError(res))
     changeMode('recover-sent')
   }
@@ -200,7 +206,10 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
           </p>
         </div>
 
-        <p className="relative text-[13px] text-slate-400">Desarrollado por Webcore</p>
+        <div className="relative space-y-3">
+          <p className="text-[13px] text-slate-400">Desarrollado por Webcore</p>
+          <LegalFooter tone="dark" />
+        </div>
       </aside>
 
       <main className="flex items-center justify-center px-6 py-12 sm:px-10">
@@ -258,16 +267,18 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
                   }
                 />
 
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm">
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-core-navy">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className={`h-4 w-4 rounded accent-core-violet ${FOCUS_OUTLINE}`}
-                    />
-                    Mantener sesión activa
-                  </label>
+                <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${isDemoData ? 'justify-end' : 'justify-between'}`}>
+                  {!isDemoData && (
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-core-navy">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className={`h-4 w-4 rounded accent-core-violet ${FOCUS_OUTLINE}`}
+                      />
+                      Mantener sesión activa
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() => changeMode('recover')}
@@ -285,7 +296,7 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
               {demoAccessEnabled && (
                 <div className="mt-8 border-t border-core-border pt-6">
                   <p id="auth-demo-label" className="text-[13px] text-core-muted">
-                    Entrar a un entorno de demostración
+                    Explorar sin cuenta, con datos de ejemplo
                   </p>
                   <div role="group" aria-labelledby="auth-demo-label" className="mt-3 grid grid-cols-3 gap-2">
                     {DEMO_CONTEXTS.map((context) => (
@@ -295,7 +306,7 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
                         disabled={busy}
                         aria-busy={pendingContext === context.id}
                         onClick={() => handleDemoContext(context)}
-                        className={`flex h-10 items-center justify-center rounded-lg border border-core-border px-1 text-[13px] font-medium text-core-navy transition-colors duration-150 hover:border-core-violet hover:text-core-violet disabled:opacity-50 ${FOCUS_OUTLINE}`}
+                        className={`flex h-10 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-core-cloud/60 px-1 text-[13px] font-medium text-core-navy transition-colors duration-150 hover:border-core-violet hover:text-core-violet disabled:opacity-50 ${FOCUS_OUTLINE}`}
                       >
                         {pendingContext === context.id ? (
                           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-label="Entrando" />
@@ -319,6 +330,13 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
               <p className="mt-2 text-[15px] text-core-muted">
                 Escribe el correo de tu cuenta para restablecer el acceso.
               </p>
+
+              {authError && (
+                <div role="alert" className="mt-6 flex items-start gap-2.5 rounded-lg bg-core-cloud p-3 text-sm text-core-navy">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-core-violet" aria-hidden="true" />
+                  <span>{authError}</span>
+                </div>
+              )}
 
               <form onSubmit={handleSubmitRecover} noValidate className="mt-8 space-y-5">
                 <AuthField
@@ -352,7 +370,16 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
             </>
           )}
 
-          <p className="mt-10 text-[13px] text-core-muted lg:hidden">Desarrollado por Webcore</p>
+          <p className="mt-6 text-[12.5px] leading-relaxed text-slate-600">
+            Al ingresar aceptas los{' '}
+            <a href="#/legal/terminos" className="font-semibold text-core-navy underline underline-offset-2">términos de uso</a>{' '}
+            y el tratamiento de tus datos según la{' '}
+            <a href="#/legal/tratamiento-datos" className="font-semibold text-core-navy underline underline-offset-2">política de tratamiento</a>.
+          </p>
+          <div className="mt-10 space-y-3 lg:hidden">
+            <p className="text-[13px] text-core-muted">Desarrollado por Webcore</p>
+            <LegalFooter />
+          </div>
         </div>
       </main>
     </div>

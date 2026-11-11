@@ -19,6 +19,7 @@ import { OperationalModulesService } from './OperationalModulesService.js'
 import { AutomationService } from './AutomationService.js'
 import { PlatformAdminService } from './PlatformAdminService.js'
 import { MetricsService } from './MetricsService.js'
+import { PrivacyService } from './PrivacyService.js'
 
 export const DATA_MODES = Object.freeze({
   LOCAL: 'local-dev',
@@ -69,5 +70,6 @@ export function createBackendEngine({ client, storage = null, logger = console }
     automations: exposeService(new AutomationService({ client })),
     audit: exposeService(audit),
     platformAdmin: exposeService(new PlatformAdminService({ client, store })),
+    privacy: exposeService(new PrivacyService({ client, store })),
   }
 }

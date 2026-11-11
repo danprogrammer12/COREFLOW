@@ -40,6 +40,36 @@ export function getSupabaseConfigStatus() {
 }
 
 let singletonClient = null
+let rememberSession = true
+
+/**
+ * Con «Mantener sesión activa» la sesión sobrevive al cierre del navegador
+ * (localStorage). Sin ella, dura hasta cerrar el navegador (sessionStorage).
+ */
+export function setSessionPersistence(remember) {
+  rememberSession = remember !== false
+}
+
+function pick(store) {
+  try {
+    return typeof window === 'undefined' ? null : window[store]
+  } catch {
+    return null
+  }
+}
+
+const sessionAwareStorage = {
+  getItem: (key) => pick('localStorage')?.getItem(key) ?? pick('sessionStorage')?.getItem(key) ?? null,
+  setItem: (key, value) => {
+    const [target, other] = rememberSession ? ['localStorage', 'sessionStorage'] : ['sessionStorage', 'localStorage']
+    pick(target)?.setItem(key, value)
+    pick(other)?.removeItem(key)
+  },
+  removeItem: (key) => {
+    pick('localStorage')?.removeItem(key)
+    pick('sessionStorage')?.removeItem(key)
+  },
+}
 
 export function getSupabaseClient() {
   if (!isSupabaseConfigured()) {
@@ -53,6 +83,7 @@ export function getSupabaseClient() {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: 'coreflow_supabase_auth_token',
+        storage: sessionAwareStorage,
       },
     })
   }

@@ -8,7 +8,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { createBackendEngine } from '../../core/backend/index.js'
-import { getSupabaseClient, getSupabaseConfigStatus } from '../../lib/supabaseClient.js'
+import { getSupabaseClient, getSupabaseConfigStatus, setSessionPersistence } from '../../lib/supabaseClient.js'
 import { CoreFlowContext } from './coreFlowContextObject.js'
 import { loadPlatformData, loadTenantData } from './supabaseData.js'
 import { roleLabel } from '../../components/ui/labels.js'
@@ -28,6 +28,9 @@ const EMPTY_PLATFORM = {
   globalAuditLogs: [],
 }
 const EMPTY_METRICS = { acumulados: {}, periodo: {}, periodInfo: {} }
+
+// Requiere la migración propuesta 018. Desactivado hasta aplicarla y probarla.
+const PRIVACY_SYNC = import.meta.env.VITE_COREFLOW_PRIVACY_SYNC === 'on'
 
 export function ConnectionScreen({ title, message, actions = null }) {
   return (
@@ -124,7 +127,8 @@ export function SupabaseCoreFlowProvider({ children }) {
   )
 
   const authenticateAccount = useCallback(
-    async ({ email, password }) => {
+    async ({ email, password, remember = true }) => {
+      setSessionPersistence(remember)
       const result = await engine.authentication.signIn({ email, password })
       return result.ok ? { ok: true, session: result.data } : result
     },
@@ -138,6 +142,16 @@ export function SupabaseCoreFlowProvider({ children }) {
       engine.authentication.requestPasswordReset({ email, redirectTo: window.location.origin }),
     [engine]
   )
+
+  const recordPrivacyConsent = useCallback(
+    (record) =>
+      engine.privacy.recordConsent(record).then((result) => {
+        if (!result.ok) console.warn('[CoreFlow] No se pudo registrar el consentimiento en el servidor:', result.error)
+        return result
+      }),
+    [engine]
+  )
+  const submitPrivacyRequest = useCallback((payload) => engine.privacy.submitRequest(payload), [engine])
 
   const switchOrganization = useCallback(
     (organizationId) => engine.organizations.switchOrganization(organizationId),
@@ -273,6 +287,8 @@ export function SupabaseCoreFlowProvider({ children }) {
     authenticateAccount,
     signOut,
     requestPasswordReset,
+    recordPrivacyConsent: PRIVACY_SYNC ? recordPrivacyConsent : undefined,
+    submitPrivacyRequest: PRIVACY_SYNC ? submitPrivacyRequest : undefined,
 
     platformAdminData: data?.platformAdminData || EMPTY_PLATFORM,
 
