@@ -117,11 +117,19 @@ describe('configuración y protección del destino', () => {
 })
 
 describe('validación previa a escribir', () => {
-  test('con las plantillas actuales, Starter se bloquea antes de escribir', async () => {
+  test('con plantillas incorrectas, Starter se bloquea antes de escribir', async () => {
     const config = readConfig(env('block'))
     const before_ = await totals()
-    await assert.rejects(runProvisioning({ admin, config, apply: true }), /STARTER_ROLES_INVALID/)
+    await assert.rejects(
+      runProvisioning({ admin, config, apply: true, roleTemplatesFor: () => Object.values(SYSTEM_ROLE_TEMPLATES) }),
+      /STARTER_ROLES_INVALID/
+    )
     assert.deepEqual(await totals(), before_)
+  })
+
+  test('las plantillas reales de cada plan pasan sin inyección', async () => {
+    const report = await runProvisioning({ admin, config: readConfig(env('real')), apply: true })
+    assert.equal(report.organizations.length, 2)
   })
 
   test('las cuentas deben ser independientes', async () => {

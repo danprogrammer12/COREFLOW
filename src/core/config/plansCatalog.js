@@ -17,7 +17,9 @@ const STARTER_DEFINITION = Object.freeze({
   limits: {
     maxCollaborators: 15,
     maxBranches: 1,
-    maxStorageMb: 5120,
+    maxStorageMb: null,
+    maxAdmins: 2,
+    maxActiveAutomations: 3,
   },
   features: {
     multiBranch: false,
@@ -27,7 +29,7 @@ const STARTER_DEFINITION = Object.freeze({
     crossAreaAutomations: false,
     responsibleIndicators: false,
     basicAutomations: true,
-    aiAssistant: true,
+    aiAssistant: false,
   },
   defaultApprovalSummary: 'Flujo directo (Plan Starter)',
   isActive: true,
@@ -44,6 +46,8 @@ const BUSINESS_DEFINITION = Object.freeze({
     maxCollaborators: 30,
     maxBranches: 10,
     maxStorageMb: 25600,
+    maxAdmins: null,
+    maxActiveAutomations: null,
   },
   features: {
     multiBranch: true,
@@ -58,6 +62,11 @@ const BUSINESS_DEFINITION = Object.freeze({
   defaultApprovalSummary: 'Nivel 1 · Revisión de Área',
   isActive: true,
 })
+
+/** Un límite sin valor es null: no aplica o aún no está configurado. */
+function optionalNumber(value) {
+  return value === null || value === undefined || value === '' ? null : Number(value)
+}
 
 export const PLANS_CATALOG = Object.freeze({
   starter: STARTER_DEFINITION,
@@ -86,7 +95,9 @@ export function normalizeDatabasePlanRow(row) {
     limits: {
       maxCollaborators: Number(limits.maxCollaborators ?? limits.max_collaborators ?? 15),
       maxBranches: Number(limits.maxBranches ?? limits.max_branches ?? 1),
-      maxStorageMb: Number(limits.maxStorageMb ?? limits.max_storage_mb ?? 5120),
+      maxStorageMb: optionalNumber(limits.maxStorageMb ?? limits.max_storage_mb),
+      maxAdmins: optionalNumber(limits.maxAdmins ?? limits.max_admins),
+      maxActiveAutomations: optionalNumber(limits.maxActiveAutomations ?? limits.max_active_automations),
     },
     features: {
       multiBranch: Boolean(features.multiBranch ?? features.multi_branch ?? false),
@@ -108,7 +119,7 @@ export function normalizeDatabasePlanRow(row) {
       basicAutomations: Boolean(
         features.basicAutomations ?? features.basic_automations ?? true
       ),
-      aiAssistant: Boolean(features.aiAssistant ?? features.ai_assistant ?? true),
+      aiAssistant: Boolean(features.aiAssistant ?? features.ai_assistant ?? false),
     },
     defaultApprovalSummary:
       row.defaultApprovalSummary ||

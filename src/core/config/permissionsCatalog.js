@@ -35,6 +35,52 @@ export const ATOMIC_PERMISSIONS = Object.freeze({
   AUTOMATIONS_WRITE: 'automations:write',
 })
 
+const STARTER_SUPERVISOR = Object.freeze({
+  code: 'SUPERVISOR',
+  name: 'Supervisor',
+  description: 'Da seguimiento a solicitudes, supervisa tareas y consulta clientes, documentos y procesos.',
+  defaultScope: DATA_SCOPES.ORG_WIDE,
+  isSystemRole: true,
+  permissions: [
+    { permissionKey: ATOMIC_PERMISSIONS.ORG_READ_STRUCTURE, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.AUDIT_READ_LOGS, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.CLIENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.OPPORTUNITIES_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.REQUESTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.REQUESTS_UPDATE, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.TASKS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.TASKS_WRITE, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_APPROVE, scopeOverride: DATA_SCOPES.ORG_WIDE },
+  ],
+})
+
+const STARTER_COLLABORATOR = Object.freeze({
+  code: 'COLLABORATOR',
+  name: 'Colaborador',
+  description: 'Gestiona sus tareas y solicitudes asignadas y consulta la información necesaria para sus funciones.',
+  defaultScope: DATA_SCOPES.TEAM_OR_ASSIGNED,
+  isSystemRole: true,
+  permissions: [
+    { permissionKey: ATOMIC_PERMISSIONS.ORG_READ_STRUCTURE, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.CLIENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.OPPORTUNITIES_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.REQUESTS_READ, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
+    { permissionKey: ATOMIC_PERMISSIONS.REQUESTS_CREATE, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
+    { permissionKey: ATOMIC_PERMISSIONS.REQUESTS_UPDATE, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
+    { permissionKey: ATOMIC_PERMISSIONS.TASKS_READ, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
+    { permissionKey: ATOMIC_PERMISSIONS.TASKS_WRITE, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
+    { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+    { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_WRITE, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
+  ],
+})
+
+/** Plantillas de roles según el plan. Starter tiene exactamente tres. */
+export function getRoleTemplatesForPlan(planCode) {
+  if (planCode !== 'starter') return Object.values(SYSTEM_ROLE_TEMPLATES)
+  return [SYSTEM_ROLE_TEMPLATES.ORG_ADMIN, STARTER_SUPERVISOR, STARTER_COLLABORATOR]
+}
+
 export const SYSTEM_ROLE_TEMPLATES = Object.freeze({
   ORG_ADMIN: {
     code: 'ORG_ADMIN',

@@ -10,7 +10,6 @@ Estado: **preparado, sin ejecutar**. Ninguna migración ni operación se ha hech
 3. Definir los correos y contraseñas de las tres cuentas, y los datos reales o de prueba de las organizaciones.
 
 **Antes de autorizar la fase 2:**
-- Migraciones 014 y 015 creadas y en verde a nivel simulado.
 - Decisión sobre la herramienta de aplicación: Supabase CLI (no instalada aquí) o el conector de Supabase de esta sesión.
 - Confirmar que el proyecto usa PostgreSQL 15 o superior: 008 usa `ON DELETE SET NULL (columna)`.
 
@@ -33,8 +32,9 @@ Se aplican una a una y en este orden, deteniéndose ante el primer error.
 | 11 | 011 | Cuotas y membresías |
 | 12 | 012 | Aprovisionamiento |
 | 13 | 013 | Capacidades y contadores |
-| 14 | 014 (pendiente) | Especificación Starter v1.0 |
-| 15 | 015 (pendiente) | Versiones de documentos |
+| 14 | 014 | Especificación Starter v1.0 |
+| 15 | 015 | Versiones de documentos y Storage con alcance |
+| 16 | 016 | Métricas con datos reales |
 
 ## 3. Riesgos y operaciones destructivas
 
@@ -50,13 +50,14 @@ En un proyecto vacío ninguna pierde datos. Se registran porque el mismo orden s
 | 009 | Retira **todas** las políticas del esquema `public` (con respaldo) | **Afectaría a tablas ajenas a CoreFlow**: el esquema debe contener solo CoreFlow |
 | 009 | `revoke` de funciones y de `update` en `user_profiles` | Bajo |
 
-**Rollbacks** (`supabase/rollbacks/`): se aplican en orden inverso. Dos son destructivos: 008 ejecuta `drop schema private cascade` y 010 retira la columna `audit_logs.origin`.
+**Rollbacks** (`supabase/rollbacks/`): se aplican en orden inverso. Tres son destructivos: 008 ejecuta `drop schema private cascade`, 010 retira la columna `audit_logs.origin` y 015 elimina el historial de versiones.
 
 **Puntos que el entorno simulado no puede confirmar:**
 - Permiso del rol `postgres` para crear el trigger en `auth.users` y las políticas en `storage.objects`.
 - Si `private.org_storage_has_room` puede leer `storage.objects`, que tiene RLS y otro dueño. Si no puede, las cargas fallarán.
 - Resolución de `uuid_generate_v4()` con la extensión en el esquema `extensions`.
 - Que la herramienta acepte nombres de migración como `001_...sql`.
+- Las columnas reales de `storage.objects`: 015 usa `owner_id` y `metadata ->> 'size'` y `'mimetype'`.
 
 ## 4. Fases
 

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
 import { uuid_ossp } from '@electric-sql/pglite/contrib/uuid_ossp'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
-import { SYSTEM_ROLE_TEMPLATES } from '../../src/core/config/permissionsCatalog.js'
+import { getRoleTemplatesForPlan } from '../../src/core/config/permissionsCatalog.js'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const MIGRATIONS_DIR = join(ROOT, 'supabase', 'migrations')
@@ -60,6 +60,7 @@ const SUPABASE_STUB = `
     bucket_id text references storage.buckets(id),
     name text not null,
     owner uuid,
+    owner_id text,
     metadata jsonb,
     created_at timestamptz not null default now(),
     unique (bucket_id, name)
@@ -164,7 +165,7 @@ export async function createPlatformAdmin(db, email, roleLevel) {
 }
 
 /**
- * Crea un tenant como superusuario, con los roles reales de `SYSTEM_ROLE_TEMPLATES`.
+ * Crea un tenant como superusuario, con las plantillas reales de roles de su plan.
  * `members`: [{ key, role, dept }]. Devuelve los ids por clave.
  */
 export async function seedTenant(
@@ -211,7 +212,7 @@ export async function seedTenant(
   }
 
   const roleIds = {}
-  for (const template of Object.values(SYSTEM_ROLE_TEMPLATES)) {
+  for (const template of getRoleTemplatesForPlan(plan)) {
     const role = await one(
       `insert into roles (organization_id, code, name, default_scope, is_system_role)
        values ($1, $2, $3, $4, true) returning id`,

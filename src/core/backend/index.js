@@ -18,6 +18,7 @@ import { WorkflowService } from './WorkflowService.js'
 import { OperationalModulesService } from './OperationalModulesService.js'
 import { AutomationService } from './AutomationService.js'
 import { PlatformAdminService } from './PlatformAdminService.js'
+import { MetricsService } from './MetricsService.js'
 
 export const DATA_MODES = Object.freeze({
   LOCAL: 'local-dev',
@@ -63,7 +64,8 @@ export function createBackendEngine({ client, storage = null, logger = console }
     authorization: exposeService(new AuthorizationService({ client, store, subscriptions })),
     subscriptions: exposeService(subscriptions),
     workflow: exposeService(new WorkflowService({ client, organizations })),
-    operationalModules: exposeService(new OperationalModulesService({ client, store, organizations })),
+    operationalModules: exposeService(new OperationalModulesService({ client, store, organizations, subscriptions })),
+    metrics: exposeService(new MetricsService({ client })),
     automations: exposeService(new AutomationService({ client })),
     audit: exposeService(audit),
     platformAdmin: exposeService(new PlatformAdminService({ client, store })),

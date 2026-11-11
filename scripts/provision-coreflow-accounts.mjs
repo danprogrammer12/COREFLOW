@@ -19,7 +19,7 @@
 
 import { existsSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { SYSTEM_ROLE_TEMPLATES } from '../src/core/config/permissionsCatalog.js'
+import { getRoleTemplatesForPlan } from '../src/core/config/permissionsCatalog.js'
 
 const STARTER_ROLE_COUNT = 3
 const USERS_PER_PAGE = 200
@@ -149,12 +149,12 @@ export function validateRoleTemplates(planCode, templates) {
     throw new ProvisioningError(
       'STARTER_ROLES_INVALID',
       `Starter requiere exactamente ${STARTER_ROLE_COUNT} roles y se recibieron ${templates.length}. ` +
-        'Aplique primero el cambio de la especificación Starter v1.0 en permissionsCatalog.js.'
+        'Revise getRoleTemplatesForPlan en permissionsCatalog.js.'
     )
   }
 }
 
-const defaultRoleTemplatesFor = () => Object.values(SYSTEM_ROLE_TEMPLATES)
+const defaultRoleTemplatesFor = getRoleTemplatesForPlan
 
 function check(step, { data, error }) {
   if (error) throw new ProvisioningError('PROVISIONING_FAILED', `${step}: ${error.message}`)

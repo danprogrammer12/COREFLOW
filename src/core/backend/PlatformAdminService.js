@@ -8,7 +8,7 @@
 import { BackendError, unwrap } from './result.js'
 import { camelizeRow, canonicalEntitlementKey, mapAuditLog } from './mappers.js'
 import { normalizeDatabasePlanRow } from '../config/plansCatalog.js'
-import { SYSTEM_ROLE_TEMPLATES } from '../config/permissionsCatalog.js'
+import { getRoleTemplatesForPlan } from '../config/permissionsCatalog.js'
 
 export class PlatformAdminService {
   constructor({ client, store }) {
@@ -38,11 +38,15 @@ export class PlatformAdminService {
           price_monthly_usd: plan.priceMonthlyUsd,
           collaborators_range_label: plan.collaboratorsRangeLabel,
           default_approval_summary: plan.defaultApprovalSummary,
-          limits_json: {
-            max_collaborators: plan.limits.maxCollaborators,
-            max_branches: plan.limits.maxBranches,
-            max_storage_mb: plan.limits.maxStorageMb,
-          },
+          limits_json: Object.fromEntries(
+            Object.entries({
+              max_collaborators: plan.limits.maxCollaborators,
+              max_branches: plan.limits.maxBranches,
+              max_storage_mb: plan.limits.maxStorageMb,
+              max_admins: plan.limits.maxAdmins,
+              max_active_automations: plan.limits.maxActiveAutomations,
+            }).filter(([, value]) => value !== null)
+          ),
           features_json: {
             multi_branch: plan.features.multiBranch,
             departments_and_teams: plan.features.departmentsAndTeams,
@@ -95,6 +99,8 @@ export class PlatformAdminService {
   /** Crea un tenant nuevo. Las plantillas de roles salen de permissionsCatalog.js. */
   async provisionOrganization(payload) {
     this._assertPlatformAdmin()
+    const planCode = payload.planCode || 'starter'
+    const adminUserId = payload.adminUserId || (await this._resolveAdminUser(payload.adminEmail))
     const result = await this.client
       .rpc('rpc_provision_organization', {
         p: {
@@ -104,13 +110,13 @@ export class PlatformAdminService {
           tax_id: payload.taxId,
           sector: payload.sector,
           city: payload.city,
-          plan_code: payload.planCode || 'starter',
+          plan_code: planCode,
           subscription_status: payload.subscriptionStatus,
           billing_cycle: payload.billingCycle,
           valid_until: payload.validUntil,
           notes: payload.notes,
-          role_templates: Object.values(SYSTEM_ROLE_TEMPLATES),
-          ...(payload.adminUserId ? { admin_user_id: payload.adminUserId } : {}),
+          role_templates: getRoleTemplatesForPlan(planCode),
+          ...(adminUserId ? { admin_user_id: adminUserId } : {}),
         },
       })
       .then(unwrap)
@@ -219,6 +225,22 @@ export class PlatformAdminService {
       .limit(limit)
       .then(unwrap)
     return rows.map(mapAuditLog)
+  }
+
+  /** Solo cuentas existentes: crear usuarios exige una función de servidor. */
+  async _resolveAdminUser(email) {
+    const clean = String(email || '').trim().toLowerCase()
+    if (!clean) return null
+    const profile = await this.client
+      .from('user_profiles')
+      .select('*')
+      .eq('email', clean)
+      .maybeSingle()
+      .then(unwrap)
+    if (!profile) {
+      throw new BackendError('USER_NOT_FOUND', 'No existe una cuenta con ese correo.')
+    }
+    return profile.id
   }
 
   _assertPlatformAdmin() {

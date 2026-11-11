@@ -13,7 +13,7 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { createBackendEngine } from '../../src/core/backend/index.js'
-import { SYSTEM_ROLE_TEMPLATES } from '../../src/core/config/permissionsCatalog.js'
+import { getRoleTemplatesForPlan } from '../../src/core/config/permissionsCatalog.js'
 import { assertSafeTarget } from '../../scripts/provision-coreflow-accounts.mjs'
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local')
@@ -46,13 +46,13 @@ async function createAccount(key) {
   return accounts[key]
 }
 
-async function provision(key, adminKey) {
+async function provision(key, adminKey, plan = 'business') {
   const { data, error } = await service.rpc('rpc_provision_organization', {
     p: {
       slug: `e2e-${RUN}-${key}`,
       display_name: `E2E ${key}`,
-      plan_code: 'business',
-      role_templates: Object.values(SYSTEM_ROLE_TEMPLATES),
+      plan_code: plan,
+      role_templates: getRoleTemplatesForPlan(plan),
       admin_user_id: accounts[adminKey].id,
     },
   })
@@ -318,8 +318,51 @@ describe('Supabase real', { skip: SKIP }, () => {
       assert.ok(stored >= 1)
     })
 
-    test('máximo de automatizaciones activas', { todo: 'Pendiente de la migración 014' }, () => {})
-    test('máximo de administradores', { todo: 'Pendiente de la migración 014' }, () => {})
-    test('historial de versiones de documentos', { todo: 'Pendiente de la migración 015' }, () => {})
+    test('automatizaciones simultáneas no superan 3 activas', async () => {
+      await createAccount('qau')
+      const org = await provision('automations', 'qau', 'starter')
+      const engine = await engineFor('qau')
+      const results = await Promise.all(
+        Array.from({ length: 6 }, (_, i) => engine.automations.createRule({ organizationId: org.organization_id, payload: { name: `R${i}` } }))
+      )
+      assert.equal(fulfilled(results), 3)
+      assert.ok(results.filter((r) => !r.ok).every((r) => r.code === 'AUTOMATION_QUOTA_EXCEEDED'))
+
+      const stored = await service.from('automation_rules').select('id').eq('organization_id', org.organization_id).eq('status', 'active')
+      assert.ifError(stored.error)
+      assert.equal(stored.data.length, 3)
+    })
+
+    test('promociones simultáneas no superan 2 administradores', async () => {
+      await createAccount('qad')
+      const org = await provision('admins', 'qad', 'starter')
+      const invited = await Promise.all(Array.from({ length: 4 }, (_, i) => createAccount(`adm${i}`)))
+      const engine = await engineFor('qad')
+      const results = await Promise.all(
+        invited.map((u) => engine.organizations.inviteMember({ organizationId: org.organization_id, email: u.email, roleCode: 'ORG_ADMIN' }))
+      )
+      assert.equal(fulfilled(results), 1)
+      assert.ok(results.filter((r) => !r.ok).every((r) => r.code === 'ADMIN_QUOTA_EXCEEDED'))
+    })
+
+    test('versiones simultáneas reciben números distintos', async () => {
+      const engine = await engineFor('a')
+      const ops = engine.operationalModules
+      const file = () => new Blob(['coreflow'], { type: 'text/plain' })
+      const doc = await ops.createDocument({ organizationId: orgA.organization_id, payload: { title: 'Versionado', filename: 'v1.txt', file: file() } })
+      assert.equal(doc.ok, true, doc.error)
+
+      const results = await Promise.all(
+        Array.from({ length: 4 }, (_, i) => ops.addDocumentVersion({ organizationId: orgA.organization_id, documentId: doc.data.id, filename: `v${i + 2}.txt`, file: file() }))
+      )
+      assert.equal(fulfilled(results), 4)
+
+      const versions = await ops.listDocumentVersions({ organizationId: orgA.organization_id, documentId: doc.data.id })
+      assert.deepEqual(versions.data.map((v) => v.versionNumber), [5, 4, 3, 2, 1])
+
+      const url = await ops.getDocumentUrl({ organizationId: orgA.organization_id, documentId: doc.data.id, versionId: versions.data[4].id })
+      assert.equal(url.ok, true, url.error)
+      assert.equal((await fetch(url.data.url)).status, 200)
+    })
   })
 })

@@ -115,6 +115,10 @@ export function mapDocument(row, directory) {
   }
 }
 
+export function mapDocumentVersion(row) {
+  return camelizeRow(row)
+}
+
 export function mapAutomationRule(row) {
   const isCrossArea = row.scope_type === 'cross_department_workflow'
   return {
@@ -158,8 +162,11 @@ export function mapCapabilities(capabilities) {
     usage: {
       collaborators: current,
       branches: Number(capabilities.usage.branches),
+      admins: Number(capabilities.usage.admins),
+      activeAutomations: Number(capabilities.usage.active_automations),
       storageBytes: Number(capabilities.usage.storage_bytes),
     },
+    storageConfigured: limits.maxStorageMb !== null,
     simulationOverlay: null,
     isSimulationActive: false,
     presentationEdition: capabilities.plan_code,

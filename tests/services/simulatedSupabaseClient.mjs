@@ -239,8 +239,8 @@ export function createSimulatedClient(db, { passwords = {}, serviceRole = false 
         async upload(path, file) {
           try {
             await client._query(
-              `insert into storage.objects (bucket_id, name, metadata) values ($1, $2, $3)`,
-              [bucket, path, { size: file.size ?? 0 }]
+              `insert into storage.objects (bucket_id, name, owner_id, metadata) values ($1, $2, $3, $4)`,
+              [bucket, path, client.currentUser?.id ?? null, { size: file.size ?? 0, mimetype: file.type }]
             )
             return { data: { path }, error: null }
           } catch (err) {

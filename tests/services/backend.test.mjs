@@ -338,7 +338,8 @@ describe('módulos operativos', () => {
   test('documento: sube el archivo, registra y genera URL', async () => {
     const engine = await signedIn('admin@biz.test')
     const doc = expectOk(await engine.operationalModules.createDocument({ organizationId: biz.orgId, payload: { title: 'Contrato', filename: 'contrato final.pdf', fileBlob: { size: 123, type: 'application/pdf' } } }))
-    assert.equal(doc.storagePath, `${biz.orgId}/documents/${doc.code}/contrato_final.pdf`)
+    assert.match(doc.storagePath, new RegExp(`^${biz.orgId}/documents/${doc.id}/[^/]+/contrato_final\\.pdf$`))
+    assert.equal(doc.version, 'v1.0')
     assert.equal(Number(doc.sizeBytes), 123)
     const { url } = expectOk(await engine.operationalModules.getDocumentUrl({ organizationId: biz.orgId, documentId: doc.id }))
     assert.ok(url.endsWith('contrato_final.pdf'))
@@ -347,11 +348,63 @@ describe('módulos operativos', () => {
   test('documento: si falla el registro no queda archivo huérfano', async () => {
     const engine = await signedIn('admin@biz.test')
     expectFail(
-      await engine.operationalModules.createDocument({ organizationId: biz.orgId, payload: { code: 'ORF', title: 'x', filename: 'x.pdf', status: 'estado-invalido', fileBlob: { size: 1, type: 'application/pdf' } } }),
+      await engine.operationalModules.createDocument({ organizationId: biz.orgId, payload: { code: 'ORF', title: 'x', filename: 'huerfano-prueba.pdf', status: 'estado-invalido', fileBlob: { size: 1, type: 'application/pdf' } } }),
       'VALIDATION_ERROR'
     )
-    const { rows } = await db.query(`select name from storage.objects where name like $1`, [`${biz.orgId}/documents/ORF/%`])
+    const { rows } = await db.query(`select name from storage.objects where name like $1`, ['%/huerfano-prueba.pdf'])
     assert.equal(rows.length, 0)
+  })
+
+  test('documento: sin archivo no se crea', async () => {
+    const engine = await signedIn('admin@biz.test')
+    expectFail(await engine.operationalModules.createDocument({ organizationId: biz.orgId, payload: { title: 'Sin archivo' } }), 'DOCUMENT_FILE_REQUIRED')
+  })
+
+  test('documento: sin capacidad configurada no se carga', async () => {
+    const engine = await signedIn('admin@starter.test')
+    expectFail(
+      await engine.operationalModules.createDocument({ organizationId: starter.orgId, payload: { title: 'X', fileBlob: { size: 1, type: 'application/pdf' } } }),
+      'STORAGE_QUOTA_NOT_CONFIGURED'
+    )
+  })
+
+  test('documento: historial de versiones y descarga por versión', async () => {
+    const engine = await signedIn('admin@biz.test')
+    const ops = engine.operationalModules
+    const doc = expectOk(await ops.createDocument({ organizationId: biz.orgId, payload: { title: 'Política', filename: 'v1.pdf', fileBlob: { size: 10, type: 'application/pdf' } } }))
+    const second = expectOk(await ops.addDocumentVersion({ organizationId: biz.orgId, documentId: doc.id, filename: 'v2.pdf', file: { size: 20, type: 'application/pdf' }, comment: 'Revisión' }))
+    assert.equal(second.versionNumber, 2)
+
+    const versions = expectOk(await ops.listDocumentVersions({ organizationId: biz.orgId, documentId: doc.id }))
+    assert.deepEqual(versions.map((v) => v.versionNumber), [2, 1])
+
+    const current = expectOk(await ops.getDocumentUrl({ organizationId: biz.orgId, documentId: doc.id }))
+    assert.ok(current.url.endsWith('v2.pdf'))
+    const first = expectOk(await ops.getDocumentUrl({ organizationId: biz.orgId, documentId: doc.id, versionId: versions[1].id }))
+    assert.ok(first.url.endsWith('v1.pdf'))
+  })
+
+  test('cliente: editar y archivar', async () => {
+    const engine = await signedIn('admin@biz.test')
+    const ops = engine.operationalModules
+    const client = expectOk(await ops.createClient({ organizationId: biz.orgId, payload: { displayName: 'Editable' } }))
+    assert.equal(expectOk(await ops.updateClient({ organizationId: biz.orgId, clientId: client.id, patch: { sector: 'Salud' } })).sector, 'Salud')
+    expectOk(await ops.archiveClient({ organizationId: biz.orgId, clientId: client.id }))
+    assert.ok(!expectOk(await ops.listClients(biz.orgId)).some((c) => c.id === client.id))
+  })
+
+  test('cliente: un rol sin permiso no archiva', async () => {
+    const admin = await signedIn('admin@biz.test')
+    const client = expectOk(await admin.operationalModules.createClient({ organizationId: biz.orgId, payload: { displayName: 'Protegido' } }))
+    const viewer = await signedIn('viewer@biz.test')
+    expectFail(await viewer.operationalModules.archiveClient({ organizationId: biz.orgId, clientId: client.id }), 'RBAC_PERMISSION_DENIED')
+  })
+
+  test('tarea: reasignar', async () => {
+    const engine = await signedIn('admin@biz.test')
+    const task = expectOk(await engine.operationalModules.createTask({ organizationId: biz.orgId, payload: { title: 'Mover' } }))
+    const updated = expectOk(await engine.operationalModules.updateTask({ organizationId: biz.orgId, taskId: task.id, patch: { assignedMemberId: biz.memberIds.ops } }))
+    assert.equal(updated.assignedMemberId, biz.memberIds.ops)
   })
 
   test('tenant suspendido no escribe', async () => {
@@ -422,6 +475,16 @@ describe('automatizaciones', () => {
     assert.ok(expectOk(await engine.automations.listRules(biz.orgId)).some((r) => r.id === rule.id))
   })
 
+  test('Starter admite 3 activas y la cuarta llega como error tipado', async () => {
+    const t = await seedTenant(db, { slug: 'st-aut', plan: 'starter', departments: ['GEN'], members: [{ key: 'admin', role: 'ORG_ADMIN', dept: 'GEN' }] })
+    const engine = await signedIn('admin@st-aut.test')
+    for (const name of ['A', 'B', 'C']) expectOk(await engine.automations.createRule({ organizationId: t.orgId, payload: { name } }))
+    expectFail(await engine.automations.createRule({ organizationId: t.orgId, payload: { name: 'D' } }), 'AUTOMATION_QUOTA_EXCEEDED')
+    const resolved = expectOk(await engine.subscriptions.getEntitlements(t.orgId))
+    assert.equal(resolved.usage.activeAutomations, 3)
+    assert.equal(resolved.realLimits.maxActiveAutomations, 3)
+  })
+
   test('Starter no crea entre áreas', async () => {
     const engine = await signedIn('admin@starter.test')
     expectFail(await engine.automations.createRule({ organizationId: starter.orgId, payload: { name: 'R', scopeType: 'cross_department_workflow' } }), 'RBAC_PERMISSION_DENIED')
@@ -481,6 +544,33 @@ describe('Platform Admin', () => {
     assert.equal(resolved.realFeatures.multiBranch, true)
   })
 
+  test('aprovisiona Starter con sus 3 roles y resuelve el administrador por correo', async () => {
+    await createAuthUser(db, 'dueno@st-nuevo.test')
+    const engine = await signedIn(superAdminEmail)
+    const { organization } = expectOk(await engine.platformAdmin.provisionOrganization({ slug: 'st-nuevo', displayName: 'St', planCode: 'starter', adminEmail: 'DUENO@st-nuevo.test' }))
+    const { rows } = await db.query(`select code from roles where organization_id = $1 order by code`, [organization.id])
+    assert.deepEqual(rows.map((r) => r.code), ['COLLABORATOR', 'ORG_ADMIN', 'SUPERVISOR'])
+    const members = await db.query(`select id from organization_members where organization_id = $1`, [organization.id])
+    assert.equal(members.rows.length, 1)
+  })
+
+  test('un administrador por correo inexistente se rechaza', async () => {
+    const engine = await signedIn(superAdminEmail)
+    expectFail(await engine.platformAdmin.provisionOrganization({ slug: 'sin-admin', displayName: 'X', adminEmail: 'nadie@nadie.test' }), 'USER_NOT_FOUND')
+  })
+
+  test('guardar un plan conserva los límites nuevos y la capacidad sin configurar', async () => {
+    const engine = await signedIn(superAdminEmail)
+    const plans = expectOk(await engine.platformAdmin.listPlans())
+    const starterPlan = plans.find((p) => p.planCode === 'starter')
+    assert.equal(starterPlan.limits.maxStorageMb, null)
+    const saved = expectOk(await engine.platformAdmin.upsertPlan({ ...starterPlan, description: 'Editada' }))
+    assert.equal(saved.limits.maxAdmins, 2)
+    assert.equal(saved.limits.maxActiveAutomations, 3)
+    assert.equal(saved.limits.maxStorageMb, null)
+    assert.equal(saved.features.aiAssistant, false)
+  })
+
   test('plan: guardar y listar', async () => {
     const engine = await signedIn(superAdminEmail)
     const plans = expectOk(await engine.platformAdmin.listPlans())
@@ -521,7 +611,7 @@ describe('compatibilidad con el contrato de las vistas', () => {
       client,
       opportunity: expectOk(await ops.createOpportunity({ organizationId: biz.orgId, payload: { clientId: client.id, title: 'T' } })),
       task: expectOk(await ops.createTask({ organizationId: biz.orgId, payload: { title: 'T' } })),
-      document: expectOk(await ops.createDocument({ organizationId: biz.orgId, payload: { title: 'T' } })),
+      document: expectOk(await ops.createDocument({ organizationId: biz.orgId, payload: { title: 'T', fileBlob: { size: 1, type: 'application/pdf' } } })),
       rule: expectOk(await engine.automations.createRule({ organizationId: biz.orgId, payload: { name: 'N' } })),
     }
   }
@@ -544,6 +634,17 @@ describe('compatibilidad con el contrato de las vistas', () => {
     for (const name of Object.keys(localRecords)) {
       assert.deepEqual(missing(localRecords[name], remote[name]), [], `faltan campos en ${name}`)
     }
+  })
+
+  test('las métricas traen todos los campos del motor local', async () => {
+    const localMetrics = local.metricsService.computeOrganizationMetrics({ organizationId: 'org-principal', requests: [], period: '7d' })
+    const engine = await signedIn('admin@biz.test')
+    const remote = expectOk(await engine.metrics.getOrganizationMetrics({ organizationId: biz.orgId, period: '7d' }))
+    assert.deepEqual(missing(localMetrics, remote), [])
+    assert.deepEqual(missing(localMetrics.acumulados, remote.acumulados), [])
+    assert.deepEqual(missing(localMetrics.periodo, remote.periodo), [])
+    assert.deepEqual(missing(localMetrics.periodo.series, remote.periodo.series), [])
+    assert.deepEqual(missing(localMetrics.periodInfo, remote.periodInfo), [])
   })
 
   test('la sesión y el contexto traen todos los campos del proveedor local', async () => {

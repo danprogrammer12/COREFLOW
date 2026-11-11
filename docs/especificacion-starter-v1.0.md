@@ -21,6 +21,8 @@ Estado: **límites definitivos, confirmados el 2026-11-10**. Reemplaza cualquier
 
 ## 2. Estado frente al backend
 
+**Actualización:** las migraciones 014, 015 y 016 implementan R5 a R9 y R12, con las decisiones de la sección 5 aprobadas. Siguen sin aplicarse en Supabase. La tabla de abajo es el estado anterior a esas migraciones, conservado como registro.
+
 Rama `feature/backend-supabase`, commit `3a84f78`. Validado solo a nivel local o simulado.
 
 | # | Estado | Situación |
@@ -75,7 +77,7 @@ Las migraciones 001 a 013 no se modifican: 014 corrige los datos sembrados.
 
 **Archivos a modificar:** `src/core/config/permissionsCatalog.js`, `src/core/config/plansCatalog.js`, `src/core/backend/mappers.js`, `PlatformAdminService.js`, `OperationalModulesService.js`, `OrganizationService.js`, `tests/db/harness.mjs`, `tests/db/security.test.mjs`, `tests/services/backend.test.mjs` y `src/core/__tests__/coreArchitecture.verify.js`.
 
-## 5. Decisiones pendientes
+## 5. Decisiones (aprobadas el 2026-11-10)
 
 1. **Permisos de cada rol.** Propuesta:
 

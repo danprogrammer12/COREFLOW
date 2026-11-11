@@ -14,9 +14,9 @@ import {
   seedRequest,
   seedTenant,
 } from './harness.mjs'
-import { SYSTEM_ROLE_TEMPLATES } from '../../src/core/config/permissionsCatalog.js'
+import { getRoleTemplatesForPlan } from '../../src/core/config/permissionsCatalog.js'
 
-const TEMPLATES = Object.values(SYSTEM_ROLE_TEMPLATES)
+const TEMPLATES = getRoleTemplatesForPlan('starter')
 const RLS_DENIED = /row-level security policy/
 let db, biz, other, starter, suspended, expired
 let superAdmin, opsAdmin, auditor
@@ -51,7 +51,8 @@ before(async () => {
     departments: [],
     members: [
       { key: 'admin', role: 'ORG_ADMIN' },
-      { key: 'specialist', role: 'SPECIALIST' },
+      { key: 'specialist', role: 'COLLABORATOR' },
+      { key: 'supervisor', role: 'SUPERVISOR' },
     ],
   })
   suspended = await seedTenant(db, {
@@ -235,7 +236,7 @@ describe('permisos y alcance de datos', () => {
     })
   })
 
-  test('sin permisos granulares (Starter) el alcance es toda la organización', async () => {
+  test('en Starter el Colaborador solo ve lo asignado y el Supervisor todo', async () => {
     const { rows } = await db.query(
       `insert into requests (organization_id, code, subject, client_display_name, branch_id,
          assigned_member_id, created_by_member_id, due_label, approval_summary)
@@ -243,6 +244,9 @@ describe('permisos y alcance de datos', () => {
       [starter.orgId, starter.branchId, starter.memberIds.admin]
     )
     await asUser(db, starter.users.specialist, async (tx) => {
+      assert.equal((await rowsOf(tx, `select id from requests where id = $1`, [rows[0].id])).length, 0)
+    })
+    await asUser(db, starter.users.supervisor, async (tx) => {
       assert.equal((await rowsOf(tx, `select id from requests where id = $1`, [rows[0].id])).length, 1)
     })
   })

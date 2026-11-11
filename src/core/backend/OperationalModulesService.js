@@ -7,7 +7,7 @@
  */
 
 import { BackendError, toBackendError, unwrap } from './result.js'
-import { mapClient, mapDocument, mapOpportunity, mapTask } from './mappers.js'
+import { mapClient, mapDocument, mapDocumentVersion, mapOpportunity, mapTask } from './mappers.js'
 
 const STORAGE_BUCKET = 'coreflow-documents'
 
@@ -16,10 +16,11 @@ function generateCode(prefix) {
 }
 
 export class OperationalModulesService {
-  constructor({ client, store, organizations }) {
+  constructor({ client, store, organizations, subscriptions }) {
     this.client = client
     this.store = store
     this.organizations = organizations
+    this.subscriptions = subscriptions
   }
 
   // --- Clientes --------------------------------------------------------------
@@ -44,6 +45,34 @@ export class OperationalModulesService {
       contact_email: payload.contactEmail ?? null,
       contact_phone: payload.contactPhone ?? null,
     })
+  }
+
+  async updateClient({ organizationId, clientId, patch }) {
+    const allowed = {}
+    const columns = {
+      displayName: 'display_name',
+      legalName: 'legal_name',
+      taxId: 'tax_id',
+      sector: 'sector',
+      status: 'status',
+      ownerMemberId: 'owner_member_id',
+      contactName: 'contact_name',
+      contactEmail: 'contact_email',
+      contactPhone: 'contact_phone',
+      notes: 'notes',
+    }
+    for (const [key, column] of Object.entries(columns)) {
+      if (patch[key] !== undefined) allowed[column] = patch[key]
+    }
+    return this._update('clients', organizationId, clientId, allowed, mapClient)
+  }
+
+  /** Archivar conserva el registro y su historial. */
+  async archiveClient({ organizationId, clientId }) {
+    await this.client
+      .rpc('rpc_archive_client', { p_org: organizationId, p_client: clientId })
+      .then(unwrap)
+    return { archived: true, clientId }
   }
 
   // --- Oportunidades ---------------------------------------------------------
@@ -90,6 +119,23 @@ export class OperationalModulesService {
     })
   }
 
+  async updateTask({ organizationId, taskId, patch }) {
+    const allowed = {}
+    const columns = {
+      title: 'title',
+      description: 'description',
+      assignedMemberId: 'assigned_member_id',
+      priority: 'priority',
+      dueLabel: 'due_label',
+      requestId: 'request_id',
+      clientId: 'client_id',
+    }
+    for (const [key, column] of Object.entries(columns)) {
+      if (patch[key] !== undefined) allowed[column] = patch[key]
+    }
+    return this._update('tasks', organizationId, taskId, allowed, mapTask)
+  }
+
   async toggleTaskStatus({ organizationId, taskId }) {
     const current = await this.client
       .from('tasks')
@@ -130,62 +176,142 @@ export class OperationalModulesService {
     return this._list('documents', organizationId, mapDocument)
   }
 
-  /** Sube el archivo y registra el documento; si el registro falla, retira el archivo. */
+  /** Sube el archivo y crea el documento con su primera versión. Sin archivo no hay documento. */
   async createDocument({ organizationId, payload }) {
-    const member = this._requireMembership(organizationId)
-    const code = payload.code || generateCode('DOC')
-    const filename = String(payload.filename || `${payload.title}.pdf`).replace(/[^a-zA-Z0-9._-]/g, '_')
-    const storagePath = `${organizationId}/documents/${code}/${filename}`
-    const file = payload.fileBlob || null
+    this._requireMembership(organizationId)
+    const file = this._requireFile(payload.file || payload.fileBlob)
+    await this._requireStorageConfigured(organizationId)
 
-    if (file) {
-      const { error } = await this.client.storage
-        .from(STORAGE_BUCKET)
-        .upload(storagePath, file, { upsert: false, contentType: file.type })
-      if (error) throw toBackendError(error)
-    }
+    const documentId = crypto.randomUUID()
+    const storagePath = this._versionPath(organizationId, documentId, payload.filename || file.name || payload.title)
+    await this._upload(storagePath, file)
 
     try {
-      return await this._insert(organizationId, 'documents', mapDocument, {
-        organization_id: organizationId,
-        code,
-        title: payload.title,
-        category: payload.category || 'Operativo',
-        version: payload.version || 'v1.0',
-        status: payload.status || 'active',
-        client_id: payload.clientId || null,
-        request_id: payload.requestId || null,
-        department_id: payload.departmentId || null,
-        uploaded_by_member_id: member.id,
-        storage_bucket: STORAGE_BUCKET,
-        storage_path: storagePath,
-        mime_type: file?.type || payload.mimeType || 'application/pdf',
-        size_bytes: file?.size ?? 0,
-      })
+      const [row, directory] = await Promise.all([
+        this.client
+          .rpc('rpc_create_document', {
+            p_org: organizationId,
+            p_document: documentId,
+            p_storage_path: storagePath,
+            p_payload: {
+              code: payload.code,
+              title: payload.title,
+              category: payload.category,
+              status: payload.status,
+              client_id: payload.clientId,
+              request_id: payload.requestId,
+              task_id: payload.taskId,
+              opportunity_id: payload.opportunityId,
+              department_id: payload.departmentId,
+              comment: payload.comment,
+            },
+          })
+          .then(unwrap),
+        this.organizations._loadDirectory(organizationId),
+      ])
+      return mapDocument(row, directory)
     } catch (err) {
-      if (file) await this.client.storage.from(STORAGE_BUCKET).remove([storagePath])
+      await this.client.storage.from(STORAGE_BUCKET).remove([storagePath])
       throw err
     }
   }
 
-  async getDocumentUrl({ organizationId, documentId, expiresInSeconds = 300 }) {
+  async addDocumentVersion({ organizationId, documentId, file, filename, comment = null }) {
+    this._requireMembership(organizationId)
+    const blob = this._requireFile(file)
+    await this._requireStorageConfigured(organizationId)
+
+    const storagePath = this._versionPath(organizationId, documentId, filename || blob.name || 'documento')
+    await this._upload(storagePath, blob)
+
+    try {
+      const row = await this.client
+        .rpc('rpc_add_document_version', {
+          p_org: organizationId,
+          p_document: documentId,
+          p_storage_path: storagePath,
+          p_comment: comment,
+        })
+        .then(unwrap)
+      return mapDocumentVersion(row)
+    } catch (err) {
+      await this.client.storage.from(STORAGE_BUCKET).remove([storagePath])
+      throw err
+    }
+  }
+
+  async listDocumentVersions({ organizationId, documentId }) {
+    const rows = await this.client
+      .from('document_versions')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('document_id', documentId)
+      .order('version_number', { ascending: false })
+      .then(unwrap)
+    return rows.map(mapDocumentVersion)
+  }
+
+  /** Sin `versionId`, entrega la versión vigente. */
+  async getDocumentUrl({ organizationId, documentId, versionId = null, expiresInSeconds = 300 }) {
     const row = await this.client
       .from('documents')
       .select('*')
       .eq('organization_id', organizationId)
       .eq('id', documentId)
+      .is('deleted_at', null)
       .maybeSingle()
       .then(unwrap)
     if (!row) throw new BackendError('ENTITY_NOT_FOUND', 'El documento no existe en la organización.')
 
+    let path = row.storage_path
+    if (versionId) {
+      const version = await this.client
+        .from('document_versions')
+        .select('*')
+        .eq('document_id', documentId)
+        .eq('id', versionId)
+        .maybeSingle()
+        .then(unwrap)
+      if (!version) throw new BackendError('ENTITY_NOT_FOUND', 'La versión no existe.')
+      path = version.storage_path
+    }
+
     const { data, error } = await this.client.storage
       .from(row.storage_bucket)
-      .createSignedUrl(row.storage_path, expiresInSeconds)
+      .createSignedUrl(path, expiresInSeconds)
     if (error) throw toBackendError(error)
     return { url: data.signedUrl, expiresInSeconds }
   }
 
   // --- Internos --------------------------------------------------------------
+  _requireFile(file) {
+    if (!file) throw new BackendError('DOCUMENT_FILE_REQUIRED', 'Selecciona el archivo del documento.')
+    return file
+  }
+
+  async _requireStorageConfigured(organizationId) {
+    const resolved = await this.subscriptions.getEntitlements(organizationId)
+    if (!resolved.storageConfigured) {
+      throw new BackendError(
+        'STORAGE_QUOTA_NOT_CONFIGURED',
+        'La capacidad de almacenamiento de la organización aún no está configurada.'
+      )
+    }
+  }
+
+  /** Cada versión tiene su propia carpeta: nunca se sobrescribe un archivo. */
+  _versionPath(organizationId, documentId, filename) {
+    const clean = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_')
+    return `${organizationId}/documents/${documentId}/${crypto.randomUUID()}/${clean}`
+  }
+
+  async _upload(path, file) {
+    const { error } = await this.client.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, file, { upsert: false, contentType: file.type })
+    if (error) throw toBackendError(error)
+  }
+
   _requireMembership(organizationId) {
     const member = this.store
       .getSnapshot()
@@ -208,6 +334,24 @@ export class OperationalModulesService {
       this.organizations._loadDirectory(organizationId),
     ])
     return rows.map((r) => mapper(r, directory))
+  }
+
+  async _update(table, organizationId, id, values, mapper) {
+    const [row, directory] = await Promise.all([
+      this.client
+        .from(table)
+        .update(values)
+        .eq('organization_id', organizationId)
+        .eq('id', id)
+        .select()
+        .maybeSingle()
+        .then(unwrap),
+      this.organizations._loadDirectory(organizationId),
+    ])
+    if (!row) {
+      throw new BackendError('UPDATE_NOT_APPLIED', 'El registro no se actualizó: no existe o no tiene permiso.')
+    }
+    return mapper(row, directory)
   }
 
   async _insert(organizationId, table, mapper, values) {

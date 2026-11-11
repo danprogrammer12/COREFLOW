@@ -1,5 +1,5 @@
 /**
- * NIVEL SIMULADA — Reversibilidad de las migraciones 008 a 012.
+ * NIVEL SIMULADA — Reversibilidad de las migraciones 008 a 016.
  * Revierte en orden inverso y comprueba que el esquema vuelve al estado de 007,
  * y que después se puede volver a aplicar.
  */
@@ -30,7 +30,7 @@ async function snapshot(db) {
   return result
 }
 
-test('008 a 012 se revierten al esquema de 007 y se pueden reaplicar', async () => {
+test('008 a 016 se revierten al esquema de 007 y se pueden reaplicar', async () => {
   const db = await createDatabase({ upTo: 7 })
   try {
     const baseline = await snapshot(db)
@@ -39,7 +39,7 @@ test('008 a 012 se revierten al esquema de 007 y se pueden reaplicar', async () 
     const migrated = await snapshot(db)
     assert.notDeepEqual(migrated.policies, baseline.policies)
 
-    for (const number of [13, 12, 11, 10, 9, 8]) {
+    for (const number of [16, 15, 14, 13, 12, 11, 10, 9, 8]) {
       await applyRollback(db, number)
     }
     const reverted = await snapshot(db)
