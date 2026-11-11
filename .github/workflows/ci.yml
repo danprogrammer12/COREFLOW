@@ -39,5 +39,8 @@ jobs:
       - name: Ejecutar suite automatizada de arquitectura, aislamiento y permisos
         run: npm run test:core
 
+      - name: Ejecutar pruebas de migraciones y RLS (nivel SIMULADA, PostgreSQL embebido)
+        run: npm run test:db
+
       - name: Compilar bundle de producción (Vite Build)
         run: npm run build

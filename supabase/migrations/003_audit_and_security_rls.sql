@@ -154,7 +154,9 @@ create policy "user_profiles: leer propio o compañero de tenant" on user_profil
     or exists (
       select 1 from organization_members om
       where om.user_id = user_profiles.id
-        and om.organization_id = any((select app_user_active_org_ids()))
+        -- Corrección 2026-11-10: sin ::uuid[], PostgreSQL trata el paréntesis como subconsulta
+        -- y compara uuid con uuid[], por lo que esta migración no se podía aplicar.
+        and om.organization_id = any((select app_user_active_org_ids())::uuid[])
     )
   );
 

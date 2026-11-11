@@ -30,7 +30,9 @@ export const ATOMIC_PERMISSIONS = Object.freeze({
   TASKS_READ: 'tasks:read',
   TASKS_WRITE: 'tasks:write',
   DOCUMENTS_READ: 'documents:read',
+  DOCUMENTS_WRITE: 'documents:write',
   DOCUMENTS_APPROVE: 'documents:approve',
+  AUTOMATIONS_WRITE: 'automations:write',
 })
 
 export const SYSTEM_ROLE_TEMPLATES = Object.freeze({
@@ -63,7 +65,9 @@ export const SYSTEM_ROLE_TEMPLATES = Object.freeze({
       { permissionKey: ATOMIC_PERMISSIONS.TASKS_READ, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
       { permissionKey: ATOMIC_PERMISSIONS.TASKS_WRITE, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
       { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+      { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_WRITE, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
       { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_APPROVE, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
+      { permissionKey: ATOMIC_PERMISSIONS.AUTOMATIONS_WRITE, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
     ],
   },
   COMMERCIAL_LEAD: {
@@ -84,6 +88,7 @@ export const SYSTEM_ROLE_TEMPLATES = Object.freeze({
       { permissionKey: ATOMIC_PERMISSIONS.TASKS_READ, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
       { permissionKey: ATOMIC_PERMISSIONS.TASKS_WRITE, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
       { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+      { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_WRITE, scopeOverride: DATA_SCOPES.DEPARTMENT_SCOPE },
     ],
   },
   SPECIALIST: {
@@ -100,6 +105,7 @@ export const SYSTEM_ROLE_TEMPLATES = Object.freeze({
       { permissionKey: ATOMIC_PERMISSIONS.TASKS_READ, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
       { permissionKey: ATOMIC_PERMISSIONS.TASKS_WRITE, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
       { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_READ, scopeOverride: DATA_SCOPES.ORG_WIDE },
+      { permissionKey: ATOMIC_PERMISSIONS.DOCUMENTS_WRITE, scopeOverride: DATA_SCOPES.TEAM_OR_ASSIGNED },
     ],
   },
   AUDITOR_VIEWER: {
