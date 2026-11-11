@@ -1,5 +1,5 @@
 /**
- * NIVEL SIMULADA — Reversibilidad de las migraciones 008 a 016.
+ * NIVEL SIMULADA — Reversibilidad de las migraciones 008 a 017.
  * Revierte en orden inverso y comprueba que el esquema vuelve al estado de 007,
  * y que después se puede volver a aplicar.
  */
@@ -30,7 +30,7 @@ async function snapshot(db) {
   return result
 }
 
-test('008 a 016 se revierten al esquema de 007 y se pueden reaplicar', async () => {
+test('008 a 017 se revierten al esquema de 007 y se pueden reaplicar', async () => {
   const db = await createDatabase({ upTo: 7 })
   try {
     const baseline = await snapshot(db)
@@ -39,7 +39,21 @@ test('008 a 016 se revierten al esquema de 007 y se pueden reaplicar', async () 
     const migrated = await snapshot(db)
     assert.notDeepEqual(migrated.policies, baseline.policies)
 
-    for (const number of [16, 15, 14, 13, 12, 11, 10, 9, 8]) {
+    const triggerFunctions = await db.query(
+      `select proname,
+              has_function_privilege('anon', oid, 'EXECUTE') as anon,
+              has_function_privilege('authenticated', oid, 'EXECUTE') as authenticated
+         from pg_proc
+        where pronamespace = 'public'::regnamespace
+          and proname in ('prevent_audit_log_tampering', 'sync_organization_plan_from_subscription')`
+    )
+    assert.equal(triggerFunctions.rows.length, 2)
+    for (const row of triggerFunctions.rows) {
+      assert.equal(row.anon, false, row.proname)
+      assert.equal(row.authenticated, false, row.proname)
+    }
+
+    for (const number of [17, 16, 15, 14, 13, 12, 11, 10, 9, 8]) {
       await applyRollback(db, number)
     }
     const reverted = await snapshot(db)

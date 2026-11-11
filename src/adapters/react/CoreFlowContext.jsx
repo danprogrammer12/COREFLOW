@@ -9,11 +9,12 @@
  *  C. TENANT_WORKSPACE — CoreFlow Business (Organización con suscripción Business)
  */
 
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react'
+import React, { useContext, useState, useMemo, useCallback } from 'react'
 import { createCoreFlowEngine } from '../../core/index.js'
-import { getSupabaseConfigStatus } from '../../lib/supabaseClient.js'
-
-const CoreFlowContext = createContext(null)
+import { DATA_MODES, resolveDataMode } from '../../core/backend/index.js'
+import { getSupabaseConfigStatus, isSupabaseConfigured } from '../../lib/supabaseClient.js'
+import { CoreFlowContext } from './coreFlowContextObject.js'
+import { ConnectionScreen, SupabaseCoreFlowProvider } from './SupabaseCoreFlowProvider.jsx'
 
 const ROLE_LABEL_BY_CODE = {
   ORG_ADMIN: 'Administrador Organizacional',
@@ -24,7 +25,33 @@ const ROLE_LABEL_BY_CODE = {
 
 const DATA_MODE = 'local-dev'
 
+function readDataMode() {
+  try {
+    return {
+      mode: resolveDataMode({
+        requestedMode: import.meta.env.VITE_COREFLOW_DATA_MODE,
+        isSupabaseConfigured: isSupabaseConfigured(),
+      }),
+    }
+  } catch (err) {
+    return { error: err }
+  }
+}
+
+/** El modo es explícito: una configuración inválida se muestra, no cae a datos locales. */
 export function CoreFlowProvider({ children }) {
+  const [resolved] = useState(readDataMode)
+  if (resolved.error) {
+    return <ConnectionScreen title="Configuración de datos inválida" message={resolved.error.message} />
+  }
+  return resolved.mode === DATA_MODES.SUPABASE ? (
+    <SupabaseCoreFlowProvider>{children}</SupabaseCoreFlowProvider>
+  ) : (
+    <LocalCoreFlowProvider>{children}</LocalCoreFlowProvider>
+  )
+}
+
+function LocalCoreFlowProvider({ children }) {
   const supabaseStatus = useMemo(() => getSupabaseConfigStatus(), [])
 
   const engine = useMemo(

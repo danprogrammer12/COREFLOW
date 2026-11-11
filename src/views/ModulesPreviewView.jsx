@@ -60,6 +60,8 @@ export function ModulesPreviewView({
   onCreateDocument,
   onCreateAutomationRule,
   onCreateDepartment,
+  isDemoData = true,
+  onOpenDocument,
 }) {
   const [filterText, setFilterText] = useState('')
   const [selectedRecord, setSelectedRecord] = useState(null)
@@ -72,6 +74,7 @@ export function ModulesPreviewView({
   const [formSecondary, setFormSecondary] = useState('')
   const [formScopeType, setFormScopeType] = useState('basic_notification')
   const [formPriority, setFormPriority] = useState('Alta')
+  const [formFile, setFormFile] = useState(null)
 
   const isStarter = edition === 'start' || edition === 'starter'
   const per = unifiedMetrics?.periodo
@@ -88,44 +91,45 @@ export function ModulesPreviewView({
     setCreatePanelOpen((v) => !v)
   }
 
-  const handleModuleFormSubmit = (e) => {
+  const handleModuleFormSubmit = async (e) => {
     e.preventDefault()
     if (!formTitle.trim()) return
 
     let res = { ok: true }
     if (moduleId === 'clientes') {
-      res = onCreateClient?.({
+      res = await onCreateClient?.({
         displayName: formTitle.trim(),
         sector: formSecondary.trim() || 'Servicios Empresariales',
         status: 'active',
       })
     } else if (moduleId === 'comercial') {
-      res = onCreateOpportunity?.({
+      res = await onCreateOpportunity?.({
         title: formTitle.trim(),
         clientId: clients[0]?.id || null,
         stage: 'propuesta',
         estimatedValue: Number(formSecondary) || 0,
       })
     } else if (moduleId === 'tareas') {
-      res = onCreateTask?.({
+      res = await onCreateTask?.({
         title: formTitle.trim(),
         priority: formPriority,
         dueLabel: formSecondary.trim() || 'Mañana · 17:00',
       })
     } else if (moduleId === 'documentos') {
-      res = onCreateDocument?.({
+      res = await onCreateDocument?.({
         title: formTitle.trim(),
         category: formSecondary.trim() || 'Operativo',
         version: 'v1.0',
+        file: formFile,
       })
     } else if (moduleId === 'procesos') {
-      res = onCreateAutomationRule?.({
+      res = await onCreateAutomationRule?.({
         name: formTitle.trim(),
         description: formSecondary.trim() || 'Regla automatizada configurada en el módulo.',
         scopeType: formScopeType,
       })
     } else if (moduleId === 'configuracion') {
-      res = onCreateDepartment?.({
+      res = await onCreateDepartment?.({
         code: (formSecondary || formTitle.slice(0, 3)).toUpperCase(),
         name: formTitle.trim(),
         branchId: branches[0]?.id,
@@ -142,6 +146,7 @@ export function ModulesPreviewView({
 
     setFormTitle('')
     setFormSecondary('')
+    setFormFile(null)
     setCreatePanelOpen(false)
     setToast({
       title: 'Registro guardado',
@@ -578,6 +583,18 @@ export function ModulesPreviewView({
               </div>
             )}
 
+            {moduleId === 'documentos' && !isDemoData && (
+              <div className="md:col-span-3">
+                <label className="block text-xs font-semibold mb-1">Archivo</label>
+                <input
+                  type="file"
+                  required
+                  onChange={(e) => setFormFile(e.target.files?.[0] || null)}
+                  className="block w-full text-xs file:mr-2 file:h-10 file:rounded-xl file:border-0 file:bg-core-cloud file:px-3 file:text-xs file:font-semibold"
+                />
+              </div>
+            )}
+
             {moduleId === 'tareas' && (
               <div className="md:col-span-3">
                 <label className="block text-xs font-semibold mb-1">Prioridad operativa</label>
@@ -802,8 +819,12 @@ export function ModulesPreviewView({
                 <TaskProgressCard
                   key={task.id}
                   task={task}
-                  onToggleStatus={() => {
-                    onToggleTaskStatus?.(task.id)
+                  onToggleStatus={async () => {
+                    const res = await onToggleTaskStatus?.(task.id)
+                    if (res?.ok === false) {
+                      setToast({ title: 'No se pudo actualizar la tarea', description: res.error })
+                      return
+                    }
                     setToast({
                       title: `Estado de tarea ${task.code || task.id} actualizado`,
                       description: 'El equipo ya ve el nuevo estado.',
@@ -862,12 +883,27 @@ export function ModulesPreviewView({
                 <DocumentRecordCard
                   key={doc.id}
                   doc={doc}
-                  onSelect={() =>
-                    setToast({
-                      title: doc.title,
-                      description: `${doc.category || 'Operativo'} · versión ${doc.version || 'v1.0'}`,
-                    })
-                  }
+                  onSelect={async () => {
+                    if (!onOpenDocument) {
+                      setToast({
+                        title: doc.title,
+                        description: `${doc.category || 'Operativo'} · versión ${doc.version || 'v1.0'}`,
+                      })
+                      return
+                    }
+                    // La pestaña se abre antes de esperar: si no, el navegador la bloquea.
+                    const tab = window.open('about:blank', '_blank')
+                    const res = await onOpenDocument(doc.id)
+                    if (res?.ok === false) {
+                      tab?.close()
+                      setToast({ title: 'No se pudo abrir el documento', description: res.error })
+                      return
+                    }
+                    if (tab) {
+                      tab.opener = null
+                      tab.location.href = res.data.url
+                    }
+                  }}
                 />
               ))}
           </div>

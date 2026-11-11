@@ -32,7 +32,7 @@ import {
   DocumentRecordCard,
   TaskProgressCard,
 } from '../components/ui/Primitives'
-import { formatStorageMb } from '../components/ui/labels'
+import { auditActionLabel, formatStorageMb } from '../components/ui/labels'
 import { ProcessEvolutionChart } from '../components/charts/ProcessEvolutionChart'
 import {
   INITIAL_ACTIVITY_FEED,
@@ -66,6 +66,8 @@ export function DashboardView({
   onOpenNewRequestModal,
   onToggleTaskStatus,
   onCreateTask,
+  isDemoData = true,
+  approvalQueue = [],
 }) {
   const [selectedDepartment, setSelectedDepartment] = useState('all')
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all')
@@ -117,14 +119,44 @@ export function DashboardView({
     return matchesSearch && matchesDept && matchesStatus
   })
 
-  const filteredActivity = INITIAL_ACTIVITY_FEED.filter(
-    (item) => activityCategory === 'Todo' || item.category === activityCategory
+  const activityFeed = isDemoData
+    ? INITIAL_ACTIVITY_FEED
+    : auditLogs.slice(0, 20).map((log) => ({
+        id: log.id,
+        category: 'Todo',
+        time: new Date(log.createdAt).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+        title: auditActionLabel(log.action),
+        detail: log.summary,
+      }))
+
+  const areaPerformance = isDemoData
+    ? BUSINESS_AREAS_PERFORMANCE
+    : Object.values(
+        requests.reduce((byOwner, req) => {
+          const row = (byOwner[req.responsable] ||= {
+            rol: req.responsable,
+            departamento: req.departamento,
+            asignadas: 0,
+            completadas: 0,
+          })
+          row.asignadas += 1
+          if (req.estado === 'completed') row.completadas += 1
+          return byOwner
+        }, {})
+      ).map((row) => ({
+        ...row,
+        cumplimiento: Math.round((row.completadas / row.asignadas) * 100),
+        estado: row.completadas === row.asignadas ? 'completed' : 'process',
+      }))
+
+  const filteredActivity = activityFeed.filter(
+    (item) => !isDemoData || activityCategory === 'Todo' || item.category === activityCategory
   )
 
-  const handleQuickCreateTask = (e) => {
+  const handleQuickCreateTask = async (e) => {
     e.preventDefault()
     if (!quickTaskTitle.trim()) return
-    const res = onCreateTask?.({
+    const res = await onCreateTask?.({
       title: quickTaskTitle.trim(),
       priority: 'Alta',
       dueLabel: 'Hoy · 17:30',
@@ -403,9 +435,9 @@ export function DashboardView({
                         <button
                           type="button"
                           title="Haz clic para cambiar el estado de la solicitud"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation()
-                            const res = onCycleRequestStatus?.(req.id)
+                            const res = await onCycleRequestStatus?.(req.id)
                             if (res && res.ok === false) {
                               setToastMessage({
                                 title: 'Cambio no permitido',
@@ -459,8 +491,12 @@ export function DashboardView({
                       <TaskProgressCard
                         key={task.id}
                         task={task}
-                        onToggleStatus={() => {
-                          onToggleTaskStatus?.(task.id)
+                        onToggleStatus={async () => {
+                          const res = await onToggleTaskStatus?.(task.id)
+                          if (res?.ok === false) {
+                            setToastMessage({ title: 'No se pudo actualizar la tarea', description: res.error })
+                            return
+                          }
                           setToastMessage({
                             title: `Tarea ${task.code || task.id} actualizada`,
                             description: 'Estado de la tarea sincronizado con el equipo.',
@@ -975,12 +1011,12 @@ export function DashboardView({
                         </td>
                         <td
                           className="py-3.5 px-3"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation()
-                            const res = onCycleRequestStatus?.(req.id)
+                            const res = await onCycleRequestStatus?.(req.id)
                             if (res && res.ok === false) {
                               setToastMessage({
-                                title: 'Acción bloqueada por política RBAC / Alcance',
+                                title: 'No se pudo cambiar el estado',
                                 description: res.error,
                               })
                               return
@@ -988,7 +1024,7 @@ export function DashboardView({
                             setToastMessage({
                               title: `Estado de ${req.id} actualizado`,
                               description:
-                                'Transición validada en WorkflowContractService y registrada en auditoría inmutable.',
+                                'El cambio quedó registrado en la auditoría.',
                             })
                           }}
                         >
@@ -1025,7 +1061,7 @@ export function DashboardView({
         {/* TAB 2 (BUSINESS): DESEMPEÑO POR ÁREA Y RESPONSABLE */}
         {operationalTab === 'responsables' && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {BUSINESS_AREAS_PERFORMANCE.map((resp) => (
+            {areaPerformance.map((resp) => (
               <div
                 key={resp.rol}
                 className="rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/40 dark:bg-[#12142E] p-4 flex flex-col justify-between gap-3"
@@ -1046,7 +1082,7 @@ export function DashboardView({
                       Actividades resueltas: {resp.completadas} de {resp.asignadas}
                     </span>
                     <span className="font-bold text-core-navy dark:text-white">
-                      {resp.cumplimiento}% SLA
+                      {resp.cumplimiento}% resuelto
                     </span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
@@ -1073,7 +1109,10 @@ export function DashboardView({
               </div>
             )}
 
-            {[
+            {!isDemoData && approvalQueue.length === 0 && (
+              <p className="text-sm text-core-muted dark:text-slate-400">No hay aprobaciones pendientes.</p>
+            )}
+            {(isDemoData ? [
               {
                 id: 'APR-102',
                 reqId: 'SOL-458',
@@ -1090,7 +1129,7 @@ export function DashboardView({
                 etapaActual: 'Nivel 2 de 2 (Listo para liberar)',
                 estado: 'process',
               },
-            ].map((apr) => (
+            ] : approvalQueue).map((apr) => (
               <div
                 key={apr.id}
                 className="rounded-xl border border-core-border dark:border-[#282C5A] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
@@ -1111,11 +1150,11 @@ export function DashboardView({
                     size="sm"
                     icon={!approvalPermission.allowed ? Lock : null}
                     iconPosition="left"
-                    onClick={() => {
-                      const res = onApproveRequestLevel?.(apr.reqId)
+                    onClick={async () => {
+                      const res = await onApproveRequestLevel?.(apr.reqId)
                       if (res && res.ok === false) {
                         setToastMessage({
-                          title: 'Acción bloqueada por Autorización Multicapa',
+                          title: 'No se pudo aprobar',
                           description: res.error,
                         })
                         return
@@ -1130,7 +1169,7 @@ export function DashboardView({
                       setToastMessage({
                         title: `Nivel aprobado en ${apr.id}`,
                         description:
-                          'Validación multinivel autorizada y registrada en auditoría protegida.',
+                          'La aprobación quedó registrada en la auditoría.',
                       })
                     }}
                   >

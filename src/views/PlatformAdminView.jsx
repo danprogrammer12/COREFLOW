@@ -129,9 +129,9 @@ export function PlatformAdminView({
   const showFailure = (res) =>
     setToast({ title: 'No se pudo guardar', description: res?.error || 'Revisa los datos e inténtalo de nuevo.' })
 
-  const handleSaveSubscription = (e) => {
+  const handleSaveSubscription = async (e) => {
     e.preventDefault()
-    const res = onUpdateSubscription?.({
+    const res = await onUpdateSubscription?.({
       organizationId: selectedOrgForSub,
       planCode: subPlanCode,
       status: subStatus,
@@ -147,9 +147,9 @@ export function PlatformAdminView({
     })
   }
 
-  const handleSavePlan = (e) => {
+  const handleSavePlan = async (e) => {
     e.preventDefault()
-    const res = onUpsertPlan?.(editingPlan)
+    const res = await onUpsertPlan?.(editingPlan)
     if (res?.ok === false) return showFailure(res)
     setToast({
       title: `Plan "${editingPlan.displayName}" guardado`,
@@ -157,7 +157,7 @@ export function PlatformAdminView({
     })
   }
 
-  const handleCreateOrgSubmit = (e) => {
+  const handleCreateOrgSubmit = async (e) => {
     e.preventDefault()
     if (!newOrgForm.displayName.trim()) return
     const slug = newOrgForm.displayName
@@ -165,7 +165,7 @@ export function PlatformAdminView({
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
 
-    const res = onCreateOrganization?.({
+    const res = await onCreateOrganization?.({
       ...newOrgForm,
       slug,
     })

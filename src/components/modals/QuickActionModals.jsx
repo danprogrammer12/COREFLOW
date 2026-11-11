@@ -13,36 +13,80 @@ import {
 import { Button, InputField, StatusBadge, GeometricAccentBar } from '../ui/Primitives'
 import { checkCapability, EDITION_RULES } from '../../data/demoStore'
 
-export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreated }) {
+const DEMO_CLIENTS = [
+  'Cuenta Corporativa A (Sector Servicios)',
+  'Cuenta Empresarial B (Sector Operativo)',
+  'Organización Asociada C (Consultoría)',
+  'Entidad Corporativa D (Soporte)',
+]
+const DEMO_AREAS = ['Operaciones', 'Comercial', 'Documentación', 'Calidad', 'Tecnología']
+const DEMO_OWNERS = [
+  'Coordinación de Operaciones',
+  'Líder de Gestión Comercial',
+  'Especialista Documental',
+  'Analista de Calidad y Procesos',
+]
+
+export function NewRequestModal({
+  isOpen,
+  onClose,
+  edition,
+  activeRole,
+  onCreated,
+  isDemoData = true,
+  clients = [],
+  departments = [],
+  members = [],
+}) {
   const [title, setTitle] = useState('')
   const [client, setClient] = useState('Cuenta Corporativa A (Sector Servicios)')
   const isBusinessEdition = edition === 'business'
   const [area, setArea] = useState(isBusinessEdition ? 'Operaciones' : 'General')
   const [responsable, setResponsable] = useState('Coordinación de Operaciones')
   const [priority, setPriority] = useState('Alta')
+  const [submitError, setSubmitError] = useState(null)
 
   if (!isOpen) return null
 
   const crossAreaCheck = checkCapability(edition, activeRole, 'crossAreaAutomation')
   const planConfig = EDITION_RULES[edition] || EDITION_RULES.start
 
-  const handleSubmit = (e) => {
+  const clientOptions = isDemoData ? DEMO_CLIENTS : clients.map((c) => c.displayName || c.legalName)
+  const areaOptions = isDemoData ? DEMO_AREAS : departments.map((d) => d.name)
+  const ownerOptions = isDemoData
+    ? DEMO_OWNERS
+    : members.filter((m) => m.status === 'active').map((m) => m.displayName)
+  const pick = (value, options) => (isDemoData || options.includes(value) ? value : options[0] || '')
+  const selectedClient = pick(client, clientOptions)
+  const selectedArea = pick(area, areaOptions)
+  const selectedOwner = pick(responsable, ownerOptions)
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setSubmitError(null)
+    if (!selectedClient) {
+      setSubmitError('Registra primero un cliente para crear solicitudes.')
+      return
+    }
     const cleanTitle =
       title.trim().length >= 4
         ? title.trim()
-        : `Requerimiento operativo · ${area} (${title.trim() || 'Seguimiento'})`
+        : `Requerimiento operativo · ${selectedArea} (${title.trim() || 'Seguimiento'})`
 
-    onCreated?.({
+    const res = await onCreated?.({
       asunto: cleanTitle,
-      cliente: client,
-      departamento: area,
-      responsable,
+      cliente: selectedClient,
+      departamento: selectedArea,
+      responsable: selectedOwner,
       prioridad: priority,
       nivelAprobacion: crossAreaCheck.allowed
-        ? `Nivel 1 · Coordinación de ${area}`
+        ? `Nivel 1 · Coordinación de ${selectedArea}`
         : planConfig.defaultApprovalLabel,
     })
+    if (res?.ok === false) {
+      setSubmitError(res.error)
+      return
+    }
     setTitle('')
     onClose()
   }
@@ -93,14 +137,14 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
                 Cuenta / Organización asociada
               </label>
               <select
-                value={client}
+                value={selectedClient}
                 onChange={(e) => setClient(e.target.value)}
                 className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
-                <option>Cuenta Corporativa A (Sector Servicios)</option>
-                <option>Cuenta Empresarial B (Sector Operativo)</option>
-                <option>Organización Asociada C (Consultoría)</option>
-                <option>Entidad Corporativa D (Soporte)</option>
+                {clientOptions.length === 0 && <option value="">Sin clientes registrados</option>}
+                {clientOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </div>
 
@@ -110,15 +154,13 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
                 Área / Departamento destino
               </label>
               <select
-                value={area}
+                value={selectedArea}
                 onChange={(e) => setArea(e.target.value)}
                 className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
-                <option>Operaciones</option>
-                <option>Comercial</option>
-                <option>Documentación</option>
-                <option>Calidad</option>
-                <option>Tecnología</option>
+                {areaOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </div>
             )}
@@ -130,14 +172,13 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
                 Rol responsable asignado
               </label>
               <select
-                value={responsable}
+                value={selectedOwner}
                 onChange={(e) => setResponsable(e.target.value)}
                 className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
-                <option>Coordinación de Operaciones</option>
-                <option>Líder de Gestión Comercial</option>
-                <option>Especialista Documental</option>
-                <option>Analista de Calidad y Procesos</option>
+                {ownerOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </div>
 
@@ -156,6 +197,12 @@ export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreate
               </select>
             </div>
           </div>
+
+          {submitError && (
+            <p role="alert" className="rounded-xl p-3 text-xs bg-rose-50 text-rose-700 border border-rose-200">
+              {submitError}
+            </p>
+          )}
 
           {/* Aviso lógico según la edición activa (Start vs Business) */}
           <div
@@ -233,13 +280,17 @@ export function RequestDetailDrawer({
     setComment('')
   }
 
-  const handleTryApprove = () => {
+  const handleTryApprove = async () => {
     if (!approvalPermission.allowed) {
       setPermissionNotice(approvalPermission.reason)
       return
     }
     setPermissionNotice(null)
-    onApproveLevel?.(request.id)
+    const res = await onApproveLevel?.(request.id)
+    if (res?.ok === false) {
+      setPermissionNotice(res.error)
+      return
+    }
     setNotes((prev) => [
       ...prev,
       {

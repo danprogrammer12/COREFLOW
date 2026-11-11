@@ -6,6 +6,7 @@ import { DesignSystemView } from './views/DesignSystemView'
 import { AuthView } from './views/AuthView'
 import { PlatformAdminView } from './views/PlatformAdminView'
 import { ModulesPreviewView } from './views/ModulesPreviewView'
+import { ToastNotification } from './components/ui/Primitives'
 import {
   NewRequestModal,
   RequestDetailDrawer,
@@ -21,6 +22,10 @@ function CoreFlowWorkspace() {
     user,
     authenticateAccount,
     signOut,
+    requestPasswordReset,
+    dataError,
+    approvalQueue,
+    getDocumentUrl,
 
     // Contexto A: Platform Admin
     platformAdminData,
@@ -72,6 +77,7 @@ function CoreFlowWorkspace() {
   const [newRequestOpen, setNewRequestOpen] = useState(false)
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   const [selectedRequestId, setSelectedRequestId] = useState(null)
+  const [actionError, setActionError] = useState(null)
 
   useEffect(() => {
     const root = document.documentElement
@@ -88,24 +94,26 @@ function CoreFlowWorkspace() {
     return cycleRequestStatus(id)
   }
 
-  const handleUpdateRequestStatus = (id, newStatus) => {
-    return updateRequestStatus(id, newStatus)
+  const handleUpdateRequestStatus = async (id, newStatus) => {
+    const res = await updateRequestStatus(id, newStatus)
+    if (res?.ok === false) setActionError(res.error)
+    return res
   }
 
   const handleApproveLevel = (id) => {
     return approveRequestLevel(id, 2)
   }
 
-  const handleCreateRequest = (newReqData) => {
-    const res = createRequest(newReqData)
+  const handleCreateRequest = async (newReqData) => {
+    const res = await createRequest(newReqData)
     if (res.ok && res.data) {
       setSelectedRequestId(res.data.id)
     }
     return res
   }
 
-  const handleAuthenticate = ({ email, password }) => {
-    const res = authenticateAccount({ email, password })
+  const handleAuthenticate = async ({ email, password }) => {
+    const res = await authenticateAccount({ email, password })
     if (res.ok) {
       setShowAuthScreen(false)
       setSelectedRequestId(null)
@@ -114,8 +122,12 @@ function CoreFlowWorkspace() {
     return res
   }
 
-  const handleSignOut = () => {
-    signOut()
+  const handleSignOut = async () => {
+    const res = await signOut()
+    if (res?.ok === false) {
+      setActionError(res.error)
+      return
+    }
     setSelectedRequestId(null)
     setShowAuthScreen(true)
   }
@@ -125,7 +137,8 @@ function CoreFlowWorkspace() {
     return (
       <AuthView
         onAuthenticate={handleAuthenticate}
-        supabaseStatus={supabaseStatus}
+        onRequestPasswordReset={requestPasswordReset}
+        isDemoData={isDemoData}
       />
     )
   }
@@ -163,9 +176,10 @@ function CoreFlowWorkspace() {
         entitlementsResolved={entitlementsResolved}
         activeOrganization={activeOrganization}
         accessibleOrganizations={accessibleOrganizations}
-        onSwitchOrganization={(orgId) => {
+        onSwitchOrganization={async (orgId) => {
           setSelectedRequestId(null)
-          switchOrganization(orgId)
+          const res = await switchOrganization(orgId)
+          if (res?.ok === false) setActionError(res.error)
         }}
         activeRole={activeRole}
         user={user}
@@ -210,6 +224,8 @@ function CoreFlowWorkspace() {
             onOpenNewRequestModal={() => setNewRequestOpen(true)}
             onToggleTaskStatus={toggleTaskStatus}
             onCreateTask={createTask}
+            isDemoData={isDemoData}
+            approvalQueue={approvalQueue}
           />
         )}
 
@@ -244,6 +260,8 @@ function CoreFlowWorkspace() {
             onSelectRequest={(req) => setSelectedRequestId(req.id)}
             onBackToDashboard={() => setActiveView('dashboard')}
             onOpenNewRequest={() => setNewRequestOpen(true)}
+            isDemoData={isDemoData}
+            onOpenDocument={getDocumentUrl}
           />
         )}
       </AppShell>
@@ -254,6 +272,10 @@ function CoreFlowWorkspace() {
         edition={presentationEdition}
         activeRole={activeRole}
         onCreated={handleCreateRequest}
+        isDemoData={isDemoData}
+        clients={clients}
+        departments={departments}
+        members={members}
       />
 
       <RequestDetailDrawer
@@ -264,6 +286,14 @@ function CoreFlowWorkspace() {
         onUpdateStatus={handleUpdateRequestStatus}
         onApproveLevel={handleApproveLevel}
       />
+
+      {(actionError || dataError) && (
+        <ToastNotification
+          title={actionError ? 'No se pudo completar la acción' : 'No se pudieron actualizar los datos'}
+          description={actionError || dataError.message}
+          onClose={() => setActionError(null)}
+        />
+      )}
     </>
   )
 }

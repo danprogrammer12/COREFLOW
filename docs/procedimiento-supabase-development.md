@@ -1,6 +1,8 @@
 # Procedimiento: conexión con CoreFlow Development
 
-Estado: **preparado, sin ejecutar**. Ninguna migración ni operación se ha hecho sobre Supabase. Requiere autorización explícita en la fase 2 y en la fase 3.
+Estado al 2026-11-11: **fases 2 a 5 ejecutadas** en el proyecto de desarrollo COREFLOW (ref `giytnwboaqwvgrenuqmg`). Las migraciones 001 y 002 se aplicaron con el servidor MCP y las 003 a 017 en una transacción desde el SQL Editor, por lo que no constan en el historial de migraciones de Supabase. Cuentas de prueba creadas, y `tests/supabase` en verde contra Supabase real. La interfaz usa Supabase con `VITE_COREFLOW_DATA_MODE=supabase-prod`; sin esa variable sigue en modo demostración. El proyecto `CoreFlow Development` (ref `ojrodppiegmchupkmhdn`) tiene el mismo esquema y no está en uso.
+
+Avisos de los asesores tras 017: las RPC `rpc_*` aparecen como `SECURITY DEFINER` invocables por `authenticated`, lo cual es intencional porque validan permisos por dentro. Los avisos de índices son informativos y se revisarán con carga real.
 
 ## 1. Requisitos previos
 
@@ -35,6 +37,7 @@ Se aplican una a una y en este orden, deteniéndose ante el primer error.
 | 14 | 014 | Especificación Starter v1.0 |
 | 15 | 015 | Versiones de documentos y Storage con alcance |
 | 16 | 016 | Métricas con datos reales |
+| 17 | 017 | Funciones de trigger fuera de la API |
 
 ## 3. Riesgos y operaciones destructivas
 

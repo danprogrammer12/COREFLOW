@@ -96,7 +96,7 @@ function BackToLogin({ onClick }) {
   )
 }
 
-export function AuthView({ onAuthenticate, supabaseStatus }) {
+export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = false }) {
   const [mode, setMode] = useState('login') // 'login' | 'recover' | 'recover-sent'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -112,7 +112,8 @@ export function AuthView({ onAuthenticate, supabaseStatus }) {
   const passwordRef = useRef(null)
   const isFirstRender = useRef(true)
 
-  const demoAccessEnabled = !supabaseStatus?.configured
+  // Depende de los datos que usa la app, no de que existan variables de Supabase.
+  const demoAccessEnabled = isDemoData
   const busy = isSubmitting || Boolean(pendingContext)
 
   useEffect(() => {
@@ -168,11 +169,13 @@ export function AuthView({ onAuthenticate, supabaseStatus }) {
     }
   }
 
-  const handleSubmitRecover = (e) => {
+  const handleSubmitRecover = async (e) => {
     e.preventDefault()
     const error = validateEmail(email)
     setFieldErrors({ email: error })
     if (error) return emailRef.current?.focus()
+    const res = await onRequestPasswordReset?.(email.trim())
+    if (res?.ok === false) return setAuthError(readableError(res))
     changeMode('recover-sent')
   }
 

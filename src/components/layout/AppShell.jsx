@@ -66,7 +66,9 @@ export function AppShell({
   }
 
   const [notifications, setNotifications] = useState(() =>
-    isBusiness
+    !isDemoData
+      ? []
+      : isBusiness
       ? [
           {
             id: 1,
