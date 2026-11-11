@@ -1,54 +1,6 @@
 import React, { useState } from 'react'
 import { GeometricAccentBar } from '../ui/Primitives'
 
-export const CHART_DATASETS = {
-  '7d': {
-    label: 'Últimos 7 días',
-    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-    maxScale: 16,
-    yTicks: [0, 4, 8, 12, 16],
-    solicitudes: [4, 6, 5, 8, 7, 6, 6], // Suma = 42 solicitudes en la semana
-    tareas: [3, 5, 6, 5, 8, 6, 5],      // Suma = 38 tareas completadas
-    automatizaciones: [2, 4, 4, 5, 5, 5, 4], // Suma = 29 flujos automatizados
-    summary: {
-      totalSolicitudes: '42',
-      totalTareas: '38',
-      totalAuto: '29',
-      cumplimientoSla: '94.2%',
-    },
-  },
-  '30d': {
-    label: 'Últimos 30 días',
-    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Actual'],
-    maxScale: 32,
-    yTicks: [0, 8, 16, 24, 32],
-    solicitudes: [18, 22, 20, 25, 24, 27, 28], // Suma = 164
-    tareas: [16, 19, 21, 22, 23, 23, 24],      // Suma = 148
-    automatizaciones: [12, 14, 16, 17, 19, 20, 20], // Suma = 118
-    summary: {
-      totalSolicitudes: '164',
-      totalTareas: '148',
-      totalAuto: '118',
-      cumplimientoSla: '95.1%',
-    },
-  },
-  trimestre: {
-    label: 'Trimestre actual',
-    labels: ['Mes 1 · Q1', 'Mes 1 · Q2', 'Mes 2 · Q1', 'Mes 2 · Q2', 'Mes 3 · Q1', 'Mes 3 · Q2', 'Cierre'],
-    maxScale: 90,
-    yTicks: [0, 22, 45, 68, 90],
-    solicitudes: [52, 58, 64, 68, 72, 75, 79], // Suma = 468
-    tareas: [48, 54, 58, 62, 66, 70, 74],      // Suma = 432
-    automatizaciones: [38, 44, 48, 52, 55, 58, 61], // Suma = 356
-    summary: {
-      totalSolicitudes: '468',
-      totalTareas: '432',
-      totalAuto: '356',
-      cumplimientoSla: '96.0%',
-    },
-  },
-}
-
 function buildSmoothPath(points) {
   if (!points.length) return ''
   let d = `M ${points[0].x} ${points[0].y}`
@@ -67,8 +19,8 @@ function buildSmoothPath(points) {
 export function ProcessEvolutionChart({
   period = '7d',
   onPeriodChange,
+  unifiedMetrics,
   executiveMode = false,
-  edition = 'business',
 }) {
   const [hoveredIdx, setHoveredIdx] = useState(6)
   const [visibleSeries, setVisibleSeries] = useState({
@@ -77,7 +29,15 @@ export function ProcessEvolutionChart({
     automatizaciones: true,
   })
 
-  const data = CHART_DATASETS[period] || CHART_DATASETS['7d']
+  const periodoData = unifiedMetrics?.periodo
+  const series = periodoData?.series || {
+    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Hoy'],
+    maxScale: 16,
+    yTicks: [0, 4, 8, 12, 16],
+    solicitudes: [5, 6, 5, 8, 7, 6, 5],
+    tareas: [4, 5, 6, 5, 7, 6, 5],
+    automatizaciones: [3, 4, 4, 5, 5, 4, 4],
+  }
 
   const toggleSeries = (key) => {
     setVisibleSeries((prev) => {
@@ -101,13 +61,13 @@ export function ProcessEvolutionChart({
   const toCoords = (values) =>
     values.map((val, idx) => ({
       x: padLeft + (idx / (values.length - 1)) * chartW,
-      y: padTop + chartH - (val / data.maxScale) * chartH,
+      y: padTop + chartH - (val / series.maxScale) * chartH,
       val,
     }))
 
-  const ptsViolet = toCoords(data.solicitudes)
-  const ptsLime = toCoords(data.tareas)
-  const ptsCyan = toCoords(data.automatizaciones)
+  const ptsViolet = toCoords(series.solicitudes)
+  const ptsLime = toCoords(series.tareas)
+  const ptsCyan = toCoords(series.automatizaciones)
 
   const pathViolet = buildSmoothPath(ptsViolet)
   const pathLime = buildSmoothPath(ptsLime)
@@ -118,22 +78,25 @@ export function ProcessEvolutionChart({
 
   return (
     <div className="flex flex-col h-full justify-between">
-      {/* Cabecera del Gráfico con Selector de Periodo y Conmutadores de Serie */}
+      {/* Cabecera del Gráfico con Selector de Período Sincronizado */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <GeometricAccentBar size="sm" />
             <h3 className="text-base font-bold text-core-navy dark:text-white">
               Evolución de procesos y ritmo operativo
             </h3>
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-core-violet/10 text-core-violet dark:bg-core-violet/25 dark:text-indigo-300">
+              {periodoData?.shortLabel || 'Período: 7 días'}
+            </span>
           </div>
           <p className="text-xs text-core-muted dark:text-slate-400 mt-0.5">
-            Volumen real de solicitudes gestionadas, tareas cerradas y automatizaciones ({data.label})
+            Métricas de flujo sincronizadas con los módulos de Solicitudes, Tareas y Procesos
           </p>
         </div>
 
-        {/* Selector de Periodo segmentado */}
-        <div className="inline-flex items-center rounded-xl bg-core-cloud dark:bg-[#101228] p-1 border border-core-border dark:border-[#282C5A] self-start">
+        {/* Selector de Período segmentado (afecta tanto al gráfico como a los indicadores de período) */}
+        <div className="inline-flex items-center rounded-xl bg-core-cloud dark:bg-[#101228] p-1 border border-core-border dark:border-[#282C5A] self-start shrink-0">
           {[
             { id: '7d', label: '7 días' },
             { id: '30d', label: '30 días' },
@@ -168,16 +131,21 @@ export function ProcessEvolutionChart({
         >
           <div className="flex items-center justify-between text-[11px] font-medium text-core-muted dark:text-slate-300">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-core-violet" />
-              Solicitudes
+              <span className="w-2.5 h-2.5 rounded-full bg-core-violet shrink-0" />
+              <span className="truncate">Gestionadas</span>
             </span>
             <span className="text-[10px] text-core-violet dark:text-indigo-300 font-semibold">
-              {visibleSeries.solicitudes ? 'Visible' : 'Oculto'}
+              {visibleSeries.solicitudes ? 'Activa' : 'Oculta'}
             </span>
           </div>
-          <p className="mt-1 text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
-            {data.summary.totalSolicitudes}
-          </p>
+          <div className="mt-1 flex items-baseline justify-between gap-1">
+            <span className="text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
+              {periodoData?.solicitudesGestionadas ?? 42}
+            </span>
+            <span className="text-[10px] text-core-muted dark:text-slate-400 truncate">
+              {periodoData?.solicitudesResueltas ?? 34} resueltas
+            </span>
+          </div>
         </button>
 
         <button
@@ -191,16 +159,21 @@ export function ProcessEvolutionChart({
         >
           <div className="flex items-center justify-between text-[11px] font-medium text-core-muted dark:text-slate-300">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#84CC16]" />
-              Tareas cerradas
+              <span className="w-2.5 h-2.5 rounded-full bg-[#84CC16] shrink-0" />
+              <span className="truncate">Tareas cerradas</span>
             </span>
             <span className="text-[10px] text-[#15803D] dark:text-core-lime font-semibold">
-              {visibleSeries.tareas ? 'Visible' : 'Oculto'}
+              {visibleSeries.tareas ? 'Activa' : 'Oculta'}
             </span>
           </div>
-          <p className="mt-1 text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
-            {data.summary.totalTareas}
-          </p>
+          <div className="mt-1 flex items-baseline justify-between gap-1">
+            <span className="text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
+              {periodoData?.tareasCerradas ?? 38}
+            </span>
+            <span className="text-[10px] text-core-muted dark:text-slate-400 truncate">
+              en período
+            </span>
+          </div>
         </button>
 
         <button
@@ -214,25 +187,30 @@ export function ProcessEvolutionChart({
         >
           <div className="flex items-center justify-between text-[11px] font-medium text-core-muted dark:text-slate-300">
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-core-cyan" />
-              Automatizados
+              <span className="w-2.5 h-2.5 rounded-full bg-core-cyan shrink-0" />
+              <span className="truncate">Automatizados</span>
             </span>
             <span className="text-[10px] text-[#0369A1] dark:text-core-cyan font-semibold">
-              {visibleSeries.automatizaciones ? 'Visible' : 'Oculto'}
+              {visibleSeries.automatizaciones ? 'Activa' : 'Oculta'}
             </span>
           </div>
-          <p className="mt-1 text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
-            {data.summary.totalAuto}
-          </p>
+          <div className="mt-1 flex items-baseline justify-between gap-1">
+            <span className="text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
+              {periodoData?.automatizacionesEjecutadas ?? 29}
+            </span>
+            <span className="text-[10px] text-core-muted dark:text-slate-400 truncate">
+              flujos
+            </span>
+          </div>
         </button>
 
         <div className="rounded-xl p-2.5 border border-core-border dark:border-[#282C5A] bg-core-cloud/55 dark:bg-[#12142E]">
-          <span className="text-[11px] font-medium text-core-muted dark:text-slate-300 block">
-            Cumplimiento en tiempo
+          <span className="text-[11px] font-medium text-core-muted dark:text-slate-300 block truncate">
+            Cumplimiento SLA
           </span>
           <div className="mt-1 flex items-baseline justify-between">
             <span className="text-lg font-extrabold text-core-navy dark:text-white tabular-nums">
-              {data.summary.cumplimientoSla}
+              {periodoData?.cumplimientoSla ?? '94.2%'}
             </span>
             <span className="text-[10px] font-bold text-[#15803D] dark:text-core-lime">
               Meta ≥ 90%
@@ -261,8 +239,8 @@ export function ProcessEvolutionChart({
           </defs>
 
           {/* Líneas de guía horizontales */}
-          {data.yTicks.map((tick) => {
-            const y = padTop + chartH - (tick / data.maxScale) * chartH
+          {series.yTicks.map((tick) => {
+            const y = padTop + chartH - (tick / series.maxScale) * chartH
             return (
               <g key={tick}>
                 <line
@@ -340,7 +318,7 @@ export function ProcessEvolutionChart({
           )}
 
           {/* Nodos interactivos */}
-          {data.labels.map((label, idx) => {
+          {series.labels.map((label, idx) => {
             const pv = ptsViolet[idx]
             const pl = ptsLime[idx]
             const pc = ptsCyan[idx]
@@ -415,25 +393,28 @@ export function ProcessEvolutionChart({
         {hoveredIdx !== null && (
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-core-cloud/85 dark:bg-[#101228] px-3.5 py-2 text-xs border border-core-border/80 dark:border-[#282C5A]">
             <span className="font-bold text-core-navy dark:text-white">
-              Detalle de corte: <span className="text-core-violet dark:text-indigo-300">{data.labels[hoveredIdx]}</span>
+              Punto de corte:{' '}
+              <span className="text-core-violet dark:text-indigo-300">
+                {series.labels[hoveredIdx]}
+              </span>
             </span>
             <div className="flex flex-wrap items-center gap-4 tabular-nums">
               <span className="text-core-muted dark:text-slate-300">
-                Solicitudes gestionadas:{' '}
+                Solicitudes:{' '}
                 <strong className="text-core-violet dark:text-indigo-300">
-                  {data.solicitudes[hoveredIdx]}
+                  {series.solicitudes[hoveredIdx]}
                 </strong>
               </span>
               <span className="text-core-muted dark:text-slate-300">
                 Tareas cerradas:{' '}
                 <strong className="text-[#4D7C0F] dark:text-core-lime">
-                  {data.tareas[hoveredIdx]}
+                  {series.tareas[hoveredIdx]}
                 </strong>
               </span>
               <span className="text-core-muted dark:text-slate-300">
-                Automatizaciones:{' '}
+                Automatizados:{' '}
                 <strong className="text-[#0369A1] dark:text-core-cyan">
-                  {data.automatizaciones[hoveredIdx]}
+                  {series.automatizaciones[hoveredIdx]}
                 </strong>
               </span>
             </div>

@@ -21,24 +21,30 @@ import {
   Moon,
   LogOut,
   Building2,
-  ShieldCheck,
   Check,
   SlidersHorizontal,
   ArrowUpRight,
 } from 'lucide-react'
 import { CoreFlowLogo } from '../brand/CoreFlowLogo'
 import { GeometricAccentBar } from '../ui/Primitives'
+import { EDITION_RULES, ROLES_CONFIG } from '../../data/demoStore'
 
 export function AppShell({
   activeView,
   onNavigate,
   edition,
-  onEditionChange,
+  entitlementsResolved = null,
+  activeOrganization = null,
+  accessibleOrganizations = [],
+  onSwitchOrganization,
+  user = null,
+  activeRole,
   darkMode,
   onToggleDarkMode,
   searchQuery,
   onSearchChange,
   onOpenAuth,
+  onSignOut,
   onOpenAiAssistant,
   counts = { clientes: 48, comercial: 16, solicitudes: 9, tareas: 24 },
   children,
@@ -48,8 +54,6 @@ export function AppShell({
   const [orgSelectorOpen, setOrgSelectorOpen] = useState(false)
   const [editionInfoOpen, setEditionInfoOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [selectedOrg, setSelectedOrg] = useState('Entorno Principal · Sede Central')
-  const [activeRole, setActiveRole] = useState('Administrador Organizacional')
 
   const [notifications, setNotifications] = useState([
     {
@@ -74,6 +78,12 @@ export function AppShell({
       targetView: 'documentos',
     },
   ])
+
+  const planConfig = EDITION_RULES[edition] || EDITION_RULES.start
+  const collabStatus = entitlementsResolved?.collaboratorsStatus || {
+    current: planConfig.activeCollaborators,
+    max: planConfig.maxCollaborators,
+  }
 
   const navItems = [
     { id: 'dashboard', label: 'Inicio', icon: Home, badge: null },
@@ -133,9 +143,9 @@ export function AppShell({
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div>
-          {/* Cabecera del Sidebar con Logotipo y geometría sutil */}
-          <div className="relative h-16 px-5 flex items-center justify-between border-b border-white/10 overflow-hidden">
+        <div className="overflow-y-auto">
+          {/* Cabecera del Sidebar con Logotipo */}
+          <div className="relative h-16 px-5 flex items-center justify-between border-b border-white/10 overflow-hidden shrink-0">
             <svg
               className="pointer-events-none absolute top-0 right-0 w-24 h-16 opacity-30"
               viewBox="0 0 100 64"
@@ -163,7 +173,7 @@ export function AppShell({
             </button>
           </div>
 
-          {/* Tarjeta de Edición Activa en Sidebar */}
+          {/* Tarjeta de Suscripción Contratada en Sidebar (Proveniente de PostgreSQL) */}
           <div className="px-3.5 pt-3.5 pb-1.5">
             <div className="relative overflow-hidden rounded-xl bg-[#1E2146] border border-white/10 p-3">
               <div className="flex items-center justify-between gap-2">
@@ -174,18 +184,24 @@ export function AppShell({
                     }`}
                   />
                   <span className="text-[11px] font-bold uppercase tracking-wider text-white">
-                    CoreFlow {edition === 'business' ? 'Business' : 'Start'}
+                    {entitlementsResolved?.contractedPlanName || planConfig.name}
                   </span>
                 </div>
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-white/10 text-slate-200 tabular-nums">
-                  {edition === 'business' ? '16–30 colab.' : '1–15 colab.'}
+                  {collabStatus.current}/{collabStatus.max} colab.
                 </span>
               </div>
               <p className="mt-1.5 text-[11px] text-slate-300 leading-snug">
                 {edition === 'business'
                   ? 'Departamentos, aprobaciones multinivel e indicadores por área activos.'
-                  : 'Gestión esencial de clientes, solicitudes, documentos y tareas.'}
+                  : 'Suscripción Starter (1–15 colab.): flujo directo, clientes, tareas y documentos.'}
               </p>
+              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-300">
+                <span className="text-core-cyan font-semibold">Suscripción verificada en BD</span>
+                <span className="px-1.5 py-0.5 rounded bg-core-lime/20 text-core-lime font-bold uppercase">
+                  {entitlementsResolved?.subscriptionStatus || 'Activa'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -208,7 +224,6 @@ export function AppShell({
                       : 'text-slate-300 hover:text-white hover:bg-white/6'
                   }`}
                 >
-                  {/* Indicador diagonal geométrico cuando está activo */}
                   {isActive && (
                     <span
                       className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-core-lime"
@@ -264,12 +279,12 @@ export function AppShell({
 
               <button
                 type="button"
-                onClick={onOpenAuth}
+                onClick={onSignOut || onOpenAuth}
                 className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-white/6 transition-all"
               >
                 <span className="flex items-center gap-3">
                   <LogOut className="w-4 h-4 text-core-cyan" strokeWidth={1.85} />
-                  <span>Vista Login / Acceso</span>
+                  <span>Cambiar cuenta / Cerrar sesión</span>
                 </span>
                 <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
               </button>
@@ -277,46 +292,36 @@ export function AppShell({
           </nav>
         </div>
 
-        {/* Pie del Sidebar: Perfil de Sesión Interactiva */}
-        <div className="relative p-3 border-t border-white/10 bg-[#12142B]">
+        {/* Pie del Sidebar: Sesión Autenticada y Rol Organizacional Real */}
+        <div className="relative p-3 border-t border-white/10 bg-[#12142B] shrink-0">
           {userMenuOpen && (
-            <div className="absolute bottom-16 left-3 right-3 rounded-xl bg-[#1C2042] border border-white/15 shadow-float p-2 z-50 space-y-1">
-              <p className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-core-cyan">
-                Cambiar perfil de vista
-              </p>
-              {['Administrador Organizacional', 'Coordinación de Operaciones', 'Líder de Área Comercial'].map(
-                (role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => {
-                      setActiveRole(role)
-                      setUserMenuOpen(false)
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between ${
-                      activeRole === role
-                        ? 'bg-core-violet text-white font-semibold'
-                        : 'text-slate-200 hover:bg-white/10'
-                    }`}
-                  >
-                    <span className="truncate">{role}</span>
-                    {activeRole === role && <Check className="w-3.5 h-3.5 shrink-0" />}
-                  </button>
-                )
-              )}
-              <div className="pt-1 mt-1 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserMenuOpen(false)
-                    onOpenAuth()
-                  }}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-core-lime hover:bg-white/10 font-semibold flex items-center gap-2"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Ir a pantalla de Inicio de Sesión
-                </button>
+            <div className="absolute bottom-16 left-3 right-3 rounded-xl bg-[#1C2042] border border-white/15 shadow-float p-3 z-50 space-y-2">
+              <div className="pb-2 border-b border-white/10">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-core-cyan">
+                  Sesión Autenticada
+                </p>
+                <p className="text-xs font-bold text-white truncate mt-0.5">
+                  {user?.fullName || activeRole}
+                </p>
+                <p className="text-[11px] font-mono text-slate-300 truncate">
+                  {user?.email || 'sesion@coreflow.app'}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setUserMenuOpen(false)
+                  if (onSignOut) {
+                    onSignOut()
+                  } else {
+                    onOpenAuth?.()
+                  }
+                }}
+                className="w-full text-left px-2.5 py-2 rounded-lg text-xs bg-core-violet hover:bg-core-blue text-white font-semibold flex items-center justify-center gap-2 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5 text-core-lime" />
+                Cerrar sesión
+              </button>
             </div>
           )}
 
@@ -331,8 +336,10 @@ export function AppShell({
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-core-lime ring-2 ring-[#12142B]" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-white truncate">Sesión Demostrativa</p>
-                <p className="text-[11px] text-slate-400 truncate">{activeRole}</p>
+                <p className="text-xs font-semibold text-white truncate">
+                  {user?.fullName || 'Usuario Autenticado'}
+                </p>
+                <p className="text-[11px] text-core-cyan truncate">{activeRole}</p>
               </div>
             </div>
             <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
@@ -342,10 +349,10 @@ export function AppShell({
 
       {/* CONTENEDOR PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* B. TOPBAR REFINADA (Jerarquía de 3 Zonas con controles h-10 alineados) */}
-        <header className="sticky top-0 z-30 h-16 bg-white/95 dark:bg-[#171936]/95 backdrop-blur-md border-b border-core-border dark:border-[#282C5A] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
-          {/* ZONA 1 (Izquierda): Menú Móvil + Indicador de Vista + Búsqueda Global */}
-          <div className="flex items-center gap-3 flex-1 max-w-xl">
+        {/* B. TOPBAR CORREGIDA (Sin superposición en el buscador global en ninguna resolución) */}
+        <header className="sticky top-0 z-30 h-16 bg-white/95 dark:bg-[#171936]/95 backdrop-blur-md border-b border-core-border dark:border-[#282C5A] px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
+          {/* ZONA 1 (Izquierda): Menú Móvil + Indicador de Vista + Búsqueda Global Limpia */}
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0 max-w-xl">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -355,16 +362,16 @@ export function AppShell({
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Breadcrumb contextual en escritorio */}
-            <div className="hidden xl:flex items-center gap-2 pr-2 border-r border-core-border dark:border-[#282C5A] shrink-0">
+            {/* Breadcrumb contextual en escritorio amplio */}
+            <div className="hidden xl:flex items-center gap-2 pr-3 border-r border-core-border dark:border-[#282C5A] shrink-0">
               <GeometricAccentBar size="sm" />
-              <span className="text-xs font-bold text-core-navy dark:text-white">
+              <span className="text-xs font-bold text-core-navy dark:text-white whitespace-nowrap">
                 {viewLabels[activeView] || 'Dashboard'}
               </span>
             </div>
 
-            {/* Buscador Global con limpieza rápida */}
-            <div className="relative flex-1">
+            {/* Buscador Global SIN etiquetas flotantes que invadan el placeholder */}
+            <div className="relative flex-1 min-w-0">
               <Search
                 className="w-4 h-4 text-core-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
                 strokeWidth={1.8}
@@ -373,29 +380,30 @@ export function AppShell({
                 type="search"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Filtrar solicitudes, cuentas, códigos o responsables..."
-                className="h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/75 dark:bg-[#101228] pl-10 pr-16 text-xs sm:text-sm text-core-navy dark:text-white placeholder:text-core-muted focus:bg-white dark:focus:bg-[#141736] focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/20 transition-all"
+                placeholder="Buscar solicitudes, códigos o cuentas..."
+                aria-label="Buscar en CoreFlow"
+                className={`h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/75 dark:bg-[#101228] pl-10 ${
+                  searchQuery ? 'pr-9' : 'pr-3.5'
+                } text-xs sm:text-sm text-core-navy dark:text-white placeholder:text-core-muted focus:bg-white dark:focus:bg-[#141736] focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/20 transition-all truncate`}
               />
-              {searchQuery ? (
+              {searchQuery && (
                 <button
                   type="button"
                   onClick={() => onSearchChange('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-core-navy dark:text-white"
+                  title="Limpiar búsqueda"
+                  aria-label="Limpiar búsqueda"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-core-muted hover:text-core-navy dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700"
                 >
-                  Limpiar
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              ) : (
-                <span className="hidden sm:inline-flex absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] text-[10px] font-semibold text-core-muted pointer-events-none">
-                  Filtro activo
-                </span>
               )}
             </div>
           </div>
 
           {/* ZONA 2 Y 3 (Derecha): Entorno + Selector Start/Business + Utilidades */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Selector de Entorno Organizacional */}
-            <div className="relative hidden 2xl:block">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Selector de Entorno Organizacional Multi-Tenant */}
+            <div className="relative hidden lg:block">
               <button
                 type="button"
                 onClick={() => {
@@ -404,83 +412,76 @@ export function AppShell({
                   setEditionInfoOpen(false)
                 }}
                 className="h-10 flex items-center gap-2 rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/60 dark:bg-[#101228] px-3 text-xs font-semibold text-core-navy dark:text-slate-200 hover:border-core-violet/40 transition-colors"
+                title="Cambiar organización activa (Aislamiento Multi-Tenant)"
               >
                 <Building2 className="w-3.5 h-3.5 text-core-violet shrink-0" strokeWidth={1.9} />
-                <span className="max-w-[180px] truncate">{selectedOrg}</span>
+                <span className="max-w-[190px] truncate">
+                  {activeOrganization?.displayName || 'Entorno Principal · Sede Central'}
+                </span>
                 <ChevronDown className="w-3.5 h-3.5 text-core-muted shrink-0" />
               </button>
 
               {orgSelectorOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-2 z-50">
-                  <p className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-core-muted">
-                    Seleccionar entorno organizacional
-                  </p>
-                  {organizations.map((org) => (
-                    <button
-                      key={org}
-                      type="button"
-                      onClick={() => {
-                        setSelectedOrg(org)
-                        setOrgSelectorOpen(false)
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between ${
-                        selectedOrg === org
-                          ? 'bg-core-violet/10 text-core-violet dark:text-indigo-300 font-semibold'
-                          : 'text-core-navy dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="truncate">{org}</span>
-                      {selectedOrg === org && (
-                        <Check className="w-3.5 h-3.5 text-core-violet shrink-0" />
-                      )}
-                    </button>
-                  ))}
+                <div className="absolute right-0 mt-2 w-80 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-2.5 z-50">
+                  <div className="px-2.5 py-1.5 border-b border-core-border dark:border-[#282C5A] mb-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-core-muted">
+                      Organizaciones con membresía activa (RLS)
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    {accessibleOrganizations.map((org) => {
+                      const isSelected = activeOrganization?.id === org.id
+                      return (
+                        <button
+                          key={org.id}
+                          type="button"
+                          onClick={() => {
+                            onSwitchOrganization?.(org.id)
+                            setOrgSelectorOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-core-violet/10 text-core-violet dark:text-indigo-300 font-semibold border border-core-violet/25'
+                              : 'text-core-navy dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">{org.displayName}</p>
+                            <p className="text-[10px] text-core-muted dark:text-slate-400 truncate">
+                              Plan contratado: {String(org.contractedPlanCode).toUpperCase()} ·{' '}
+                              {org.activeCollaboratorsCount} colab.
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 text-core-violet shrink-0" />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* SELECTOR START / BUSINESS PERFECCIONADO */}
+            {/* INDICADOR DE SUSCRIPCIÓN CONTRATADA (SIN SIMULACIÓN DESDE TOPBAR) */}
             <div className="relative flex items-center">
               <div
-                className="h-10 inline-flex items-center rounded-xl bg-core-cloud dark:bg-[#101228] p-1 border border-core-border dark:border-[#282C5A]"
-                role="group"
-                aria-label="Selector de edición CoreFlow"
+                className="h-10 inline-flex items-center rounded-xl bg-core-cloud dark:bg-[#101228] px-2.5 border border-core-border dark:border-[#282C5A] gap-2"
+                role="status"
+                aria-label="Suscripción activa de la organización"
               >
-                <button
-                  type="button"
-                  onClick={() => onEditionChange('start')}
-                  className={`h-8 px-2.5 sm:px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    edition === 'start'
-                      ? 'bg-core-navy dark:bg-core-violet text-white shadow-xs'
-                      : 'text-core-muted dark:text-slate-400 hover:text-core-navy dark:hover:text-white'
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    edition === 'business' ? 'bg-core-lime' : 'bg-core-cyan'
                   }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      edition === 'start' ? 'bg-core-cyan' : 'bg-slate-400'
-                    }`}
-                  />
-                  <span>Start</span>
-                  <span className="hidden md:inline text-[10px] opacity-80 font-normal">1–15</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onEditionChange('business')}
-                  className={`h-8 px-2.5 sm:px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    edition === 'business'
-                      ? 'bg-core-violet text-white shadow-xs'
-                      : 'text-core-muted dark:text-slate-400 hover:text-core-navy dark:hover:text-white'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      edition === 'business' ? 'bg-core-lime' : 'bg-slate-400'
-                    }`}
-                  />
-                  <span>Business</span>
-                  <span className="hidden md:inline text-[10px] opacity-85 font-normal">16–30</span>
-                </button>
+                />
+                <span className="text-xs font-extrabold text-core-navy dark:text-white">
+                  {entitlementsResolved?.contractedPlanName ||
+                    (edition === 'business' ? 'CoreFlow Business' : 'CoreFlow Starter')}
+                </span>
+                <span className="hidden md:inline text-[11px] font-semibold px-1.5 py-0.5 rounded bg-core-violet/10 text-core-violet dark:text-indigo-300 tabular-nums">
+                  {collabStatus.current}/{collabStatus.max} colab.
+                </span>
 
                 <button
                   type="button"
@@ -489,24 +490,23 @@ export function AppShell({
                     setNotificationsOpen(false)
                     setOrgSelectorOpen(false)
                   }}
-                  className="hidden sm:inline-flex h-8 w-7 items-center justify-center rounded-lg text-core-muted hover:text-core-violet dark:hover:text-white"
-                  title="Ver comparativa de capacidades Start vs Business"
-                  aria-label="Información de ediciones"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-core-muted hover:text-core-violet dark:hover:text-white"
+                  title="Ver detalles de suscripción y capacidades habilitadas en PostgreSQL"
+                  aria-label="Información de suscripción"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Popover comparativo de alcance de edición */}
               {editionInfoOpen && (
                 <div className="absolute right-0 top-12 w-80 sm:w-96 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-4 z-50">
                   <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-core-border dark:border-[#282C5A]">
                     <div>
                       <p className="text-xs font-bold text-core-navy dark:text-white">
-                        Alcance de Ediciones CoreFlow
+                        Suscripción y Capacidades del Tenant
                       </p>
                       <p className="text-[11px] text-core-muted dark:text-slate-400">
-                        Misma plataforma y sistema visual, capacidades según plan
+                        Administrado desde CoreFlow Platform Admin (PostgreSQL)
                       </p>
                     </div>
                     <button
@@ -518,70 +518,41 @@ export function AppShell({
                     </button>
                   </div>
 
-                  <div className="space-y-3 text-xs">
-                    <div
-                      onClick={() => {
-                        onEditionChange('start')
-                        setEditionInfoOpen(false)
-                      }}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                        edition === 'start'
-                          ? 'border-core-cyan bg-core-cyan/5 dark:bg-core-cyan/10'
-                          : 'border-core-border dark:border-[#282C5A] hover:border-core-cyan/50'
-                      }`}
-                    >
+                  <div className="space-y-2.5 text-xs">
+                    <div className="p-3 rounded-xl border border-core-violet/30 bg-core-violet/5 dark:bg-core-violet/15">
                       <div className="flex items-center justify-between font-bold text-core-navy dark:text-white">
-                        <span>CoreFlow Start (1 a 15 colaboradores)</span>
-                        {edition === 'start' && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-core-cyan/20 text-[#0369A1] dark:text-core-cyan">
-                            Activo
-                          </span>
-                        )}
+                        <span>
+                          {entitlementsResolved?.contractedPlanName || planConfig.name}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-core-violet text-white uppercase">
+                          {entitlementsResolved?.subscriptionStatus || 'active'}
+                        </span>
                       </div>
                       <p className="mt-1 text-[11px] text-core-muted dark:text-slate-300">
-                        Clientes, solicitudes y oportunidades, documentos, tareas, automatizaciones básicas, asistente IA y roles básicos.
+                        Cuota activa: <strong>{collabStatus.current}</strong> de{' '}
+                        <strong>{collabStatus.max}</strong> colaboradores permitidos.
                       </p>
                     </div>
 
-                    <div
-                      onClick={() => {
-                        onEditionChange('business')
-                        setEditionInfoOpen(false)
-                      }}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                        edition === 'business'
-                          ? 'border-core-violet bg-core-violet/5 dark:bg-core-violet/15'
-                          : 'border-core-border dark:border-[#282C5A] hover:border-core-violet/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between font-bold text-core-navy dark:text-white">
-                        <span>CoreFlow Business (16 a 30 colaboradores)</span>
-                        {edition === 'business' && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-core-violet text-white">
-                            Activo
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-[11px] text-core-muted dark:text-slate-300">
-                        Todo Start + Departamentos y equipos, permisos granulares, aprobaciones multinivel, automatizaciones entre áreas e indicadores por responsable.
-                      </p>
-                    </div>
+                    <p className="text-[11px] text-core-muted dark:text-slate-400">
+                      Para modificar el plan contratado, vigencias o cuotas de esta organización,
+                      inicia sesión con la cuenta <strong>CoreFlow Platform Admin</strong>.
+                    </p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Separador vertical de zona de utilidades */}
             <div className="hidden sm:block h-6 w-px bg-core-border dark:bg-[#282C5A] mx-0.5" />
 
             {/* Botón Asistente IA */}
             <button
               type="button"
               onClick={onOpenAiAssistant}
-              className="h-10 inline-flex items-center gap-1.5 rounded-xl border border-core-violet/30 bg-core-violet/8 dark:bg-core-violet/20 hover:bg-core-violet hover:text-white text-core-violet dark:text-indigo-300 px-3 text-xs font-semibold transition-all"
+              className="h-10 inline-flex items-center gap-1.5 rounded-xl border border-core-violet/30 bg-core-violet/8 dark:bg-core-violet/20 hover:bg-core-violet hover:text-white text-core-violet dark:text-indigo-300 px-2.5 sm:px-3 text-xs font-semibold transition-all"
               title="Abrir Asistente Operativo IA"
             >
-              <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
+              <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
               <span className="hidden md:inline">Asistente IA</span>
             </button>
 
@@ -596,7 +567,7 @@ export function AppShell({
               {darkMode ? <Sun className="w-4 h-4 text-core-lime" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {/* Centro de Notificaciones funcional */}
+            {/* Centro de Notificaciones */}
             <div className="relative">
               <button
                 type="button"

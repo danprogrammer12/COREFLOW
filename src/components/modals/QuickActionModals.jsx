@@ -1,22 +1,46 @@
 import React, { useState } from 'react'
-import { X, Sparkles, Send, Plus, CheckCircle2, ArrowRight } from 'lucide-react'
-import { Button, InputField, StatusBadge } from '../ui/Primitives'
+import {
+  X,
+  Sparkles,
+  Send,
+  ArrowRight,
+  ShieldCheck,
+  ShieldAlert,
+  Building2,
+  UserCheck,
+  Lock,
+} from 'lucide-react'
+import { Button, InputField, StatusBadge, GeometricAccentBar } from '../ui/Primitives'
+import { checkCapability, EDITION_RULES } from '../../data/demoStore'
 
-export function NewRequestModal({ isOpen, onClose, edition, onCreated }) {
+export function NewRequestModal({ isOpen, onClose, edition, activeRole, onCreated }) {
   const [title, setTitle] = useState('')
-  const [client, setClient] = useState('Unidad Corporativa Norte')
+  const [client, setClient] = useState('Cuenta Corporativa A (Sector Servicios)')
   const [area, setArea] = useState('Operaciones')
-  const [priority, setPriority] = useState('Media')
+  const [responsable, setResponsable] = useState('Coordinación de Operaciones')
+  const [priority, setPriority] = useState('Alta')
 
   if (!isOpen) return null
 
+  const crossAreaCheck = checkCapability(edition, activeRole, 'crossAreaAutomation')
+  const planConfig = EDITION_RULES[edition] || EDITION_RULES.start
+
   const handleSubmit = (e) => {
     e.preventDefault()
+    const cleanTitle =
+      title.trim().length >= 4
+        ? title.trim()
+        : `Requerimiento operativo · ${area} (${title.trim() || 'Seguimiento'})`
+
     onCreated?.({
-      title: title || 'Requerimiento operativo de seguimiento',
-      client,
-      area,
-      priority,
+      asunto: cleanTitle,
+      cliente: client,
+      departamento: area,
+      responsable,
+      prioridad: priority,
+      nivelAprobacion: crossAreaCheck.allowed
+        ? `Nivel 1 · Coordinación de ${area}`
+        : planConfig.defaultApprovalLabel,
     })
     setTitle('')
     onClose()
@@ -25,17 +49,28 @@ export function NewRequestModal({ isOpen, onClose, edition, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-core-navy/65 backdrop-blur-xs">
       <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float overflow-hidden">
-        <div className="px-6 py-4 bg-core-navy text-white flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-core-cyan">
-              Flujo Operativo · CoreFlow {edition === 'business' ? 'Business' : 'Start'}
+        <div className="relative px-6 py-4 bg-core-navy text-white flex items-center justify-between overflow-hidden">
+          <svg
+            className="pointer-events-none absolute top-0 right-0 w-32 h-20 opacity-35"
+            viewBox="0 0 120 80"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M40 -10 L130 80 L130 40 L80 -10 Z" fill="#6545E8" />
+            <path d="M80 -10 L130 40 L130 15 L105 -10 Z" fill="#08C9E8" />
+          </svg>
+          <div className="relative z-10 min-w-0 flex-1 pr-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-core-cyan block">
+              Registro Operativo · {planConfig.name}
             </span>
-            <h3 className="text-base font-bold">Registrar nueva solicitud</h3>
+            <h3 className="text-base font-bold text-white mt-0.5">
+              Registrar nueva solicitud
+            </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10"
+            className="relative z-10 p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
             aria-label="Cerrar ventana"
           >
             <X className="w-4 h-4" />
@@ -44,62 +79,109 @@ export function NewRequestModal({ isOpen, onClose, edition, onCreated }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <InputField
-            label="Asunto de la solicitud"
-            placeholder="Ej. Parametrización de entregables trimestrales..."
+            label="Asunto / Descripción de la solicitud"
+            placeholder="Ej. Estandarización de entregables trimestrales..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            required
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-core-muted dark:text-slate-300 block mb-1.5">
-                Cliente / Organización
+              <label className="text-xs font-semibold text-core-navy dark:text-slate-200 block mb-1.5">
+                Cuenta / Organización asociada
               </label>
               <select
                 value={client}
                 onChange={(e) => setClient(e.target.value)}
-                className="w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 py-2.5 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
-                <option>Unidad Corporativa Norte</option>
-                <option>Grupo Logístico del Caribe</option>
-                <option>Inversiones Técnica S.A.S.</option>
-                <option>Distribuidora Regional</option>
+                <option>Cuenta Corporativa A (Sector Servicios)</option>
+                <option>Cuenta Empresarial B (Sector Operativo)</option>
+                <option>Organización Asociada C (Consultoría)</option>
+                <option>Entidad Corporativa D (Soporte)</option>
               </select>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-core-muted dark:text-slate-300 block mb-1.5">
-                Área responsable
+              <label className="text-xs font-semibold text-core-navy dark:text-slate-200 block mb-1.5">
+                Área / Departamento destino
               </label>
               <select
                 value={area}
                 onChange={(e) => setArea(e.target.value)}
-                className="w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 py-2.5 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
                 <option>Operaciones</option>
                 <option>Comercial</option>
                 <option>Documentación</option>
                 <option>Calidad</option>
+                <option>Tecnología</option>
               </select>
             </div>
           </div>
 
-          {edition === 'business' && (
-            <div className="rounded-xl bg-core-violet/5 dark:bg-core-violet/15 border border-core-violet/20 p-3 text-xs text-core-navy dark:text-slate-200">
-              <strong className="text-core-violet dark:text-indigo-300 block mb-0.5">
-                Regla Business activa:
-              </strong>
-              Se asignará automáticamente al flujo de aprobación multinivel del departamento de{' '}
-              <strong>{area}</strong>.
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-core-navy dark:text-slate-200 block mb-1.5">
+                Rol responsable asignado
+              </label>
+              <select
+                value={responsable}
+                onChange={(e) => setResponsable(e.target.value)}
+                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+              >
+                <option>Coordinación de Operaciones</option>
+                <option>Líder de Gestión Comercial</option>
+                <option>Especialista Documental</option>
+                <option>Analista de Calidad y Procesos</option>
+              </select>
             </div>
-          )}
+
+            <div>
+              <label className="text-xs font-semibold text-core-navy dark:text-slate-200 block mb-1.5">
+                Prioridad operativa
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+              >
+                <option>Alta</option>
+                <option>Media</option>
+                <option>Prioritaria</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Aviso lógico según la edición activa (Start vs Business) */}
+          <div
+            className={`rounded-xl p-3.5 text-xs border ${
+              crossAreaCheck.allowed
+                ? 'bg-core-violet/6 dark:bg-core-violet/15 border-core-violet/25 text-core-navy dark:text-slate-200'
+                : 'bg-core-cloud dark:bg-[#101228] border-core-border dark:border-[#282C5A] text-core-muted dark:text-slate-300'
+            }`}
+          >
+            <strong
+              className={`block mb-0.5 ${
+                crossAreaCheck.allowed
+                  ? 'text-core-violet dark:text-indigo-300'
+                  : 'text-core-navy dark:text-white'
+              }`}
+            >
+              Regla aplicada ({planConfig.name}):
+            </strong>
+            {crossAreaCheck.allowed
+              ? `Se activará enrutamiento entre áreas y aprobación multinivel inicial en ${area}.`
+              : 'Se registrará con flujo de asignación directa (las aprobaciones multinivel entre áreas corresponden a CoreFlow Business).'}
+          </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
             <Button type="submit" variant="primary" icon={ArrowRight}>
-              Crear y asignar
+              Crear y vincular al flujo
             </Button>
           </div>
         </form>
@@ -108,35 +190,303 @@ export function NewRequestModal({ isOpen, onClose, edition, onCreated }) {
   )
 }
 
-export function AiAssistantDrawer({ isOpen, onClose, edition }) {
-  const [prompt, setPrompt] = useState('')
-  const [messages, setMessages] = useState([
+/**
+ * Drawer de Detalle y Seguimiento de Solicitud
+ * Encabezado corregido sin truncamiento forzado y con validación lógica de permisos Start/Business y Rol.
+ */
+export function RequestDetailDrawer({
+  request,
+  onClose,
+  edition,
+  activeRole = 'Administrador Organizacional',
+  onUpdateStatus,
+  onApproveLevel,
+}) {
+  const [comment, setComment] = useState('')
+  const [permissionNotice, setPermissionNotice] = useState(null)
+  const [notes, setNotes] = useState([
     {
-      role: 'assistant',
-      text: 'Asistente operativo CoreFlow listo. Puedo ayudarte a resumir solicitudes abiertas, consultar el estado de documentos o verificar tareas pendientes por responsable.',
+      author: 'Sistema CoreFlow',
+      time: 'Registro inicial',
+      text: 'Solicitud ingresada y vinculada a la cuenta y responsable asignados.',
     },
   ])
 
-  if (!isOpen) return null
+  if (!request) return null
 
-  const handleSend = (e) => {
+  const approvalPermission = checkCapability(edition, activeRole, 'multilevelApproval')
+
+  const handleAddNote = (e) => {
     e.preventDefault()
-    if (!prompt.trim()) return
-    const userMsg = prompt.trim()
-    setPrompt('')
-    setMessages((prev) => [
+    if (!comment.trim()) return
+    setNotes((prev) => [
       ...prev,
-      { role: 'user', text: userMsg },
       {
-        role: 'assistant',
-        text: `Consulta procesada en tu entorno CoreFlow (${edition.toUpperCase()}): Existen actualmente 9 solicitudes en seguimiento, 2 aprobaciones listas para validar y un cumplimiento operativo del 92% en la semana actual.`,
+        author: activeRole,
+        time: 'Ahora mismo',
+        text: comment.trim(),
+      },
+    ])
+    setComment('')
+  }
+
+  const handleTryApprove = () => {
+    if (!approvalPermission.allowed) {
+      setPermissionNotice(approvalPermission.reason)
+      return
+    }
+    setPermissionNotice(null)
+    onApproveLevel?.(request.id)
+    setNotes((prev) => [
+      ...prev,
+      {
+        author: activeRole,
+        time: 'Ahora mismo',
+        text: 'Nivel de aprobación validado satisfactoriamente en el flujo multinivel.',
       },
     ])
   }
 
   return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-core-navy/60 backdrop-blur-xs">
+      <div className="w-full sm:max-w-lg bg-white dark:bg-[#171936] h-full border-l border-core-border dark:border-[#282C5A] shadow-2xl flex flex-col justify-between overflow-hidden">
+        {/* ENCABEZADO CORREGIDO: Jerarquía limpia, sin colapso de flexbox ni truncamiento de una sola letra */}
+        <div className="p-5 sm:p-6 bg-core-navy text-white border-b border-white/10">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <GeometricAccentBar size="sm" />
+              <span className="px-2.5 py-0.5 rounded-md bg-core-violet/35 border border-core-violet/60 text-xs font-extrabold text-core-cyan tabular-nums">
+                {request.id}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-semibold text-slate-200">
+                Área: {request.departamento}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-semibold text-core-lime">
+                Prioridad {request.prioridad}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
+              aria-label="Cerrar panel de seguimiento"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <h3 className="mt-3 text-base sm:text-lg font-bold text-white leading-snug break-words">
+            {request.asunto && request.asunto.length > 2
+              ? request.asunto
+              : `Seguimiento operativo de solicitud ${request.id}`}
+          </h3>
+
+          <p className="mt-1 text-xs text-slate-300">
+            Organización vinculada: <strong className="text-white">{request.cliente}</strong>
+          </p>
+        </div>
+
+        {/* Cuerpo de trazabilidad */}
+        <div className="flex-1 p-5 sm:p-6 overflow-y-auto space-y-5">
+          {/* Estado actual y plazo */}
+          <div className="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-core-cloud/75 dark:bg-[#101228] border border-core-border dark:border-[#282C5A]">
+            <div>
+              <p className="text-[11px] font-medium text-core-muted dark:text-slate-400">
+                Estado operativo actual
+              </p>
+              <div className="mt-1">
+                <StatusBadge status={request.estado} />
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] font-medium text-core-muted dark:text-slate-400">
+                Plazo / SLA de atención
+              </p>
+              <p className="text-xs font-bold text-core-navy dark:text-white mt-1">
+                {request.vencimiento}
+              </p>
+            </div>
+          </div>
+
+          {/* Cambiar Estado Operativo */}
+          <div>
+            <p className="text-xs font-bold text-core-navy dark:text-white mb-2">
+              Transición de estado en el flujo
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'pending', label: 'Pendiente' },
+                { id: 'process', label: 'En proceso' },
+                { id: 'active', label: 'Activo' },
+                { id: 'completed', label: 'Completado' },
+                { id: 'error', label: 'Requiere atención' },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => onUpdateStatus?.(request.id, st.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    request.estado === st.id
+                      ? 'border-core-violet bg-core-violet text-white shadow-2xs'
+                      : 'border-core-border dark:border-[#282C5A] bg-white dark:bg-[#12142E] text-core-navy dark:text-slate-200 hover:border-core-violet/50'
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Metadatos y Control de Permisos de Edición / Rol */}
+          <div className="rounded-xl border border-core-border dark:border-[#282C5A] divide-y divide-core-border/70 dark:divide-[#282C5A] text-xs">
+            <div className="p-3.5 flex items-center justify-between gap-2">
+              <span className="text-core-muted flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-core-violet shrink-0" />
+                Cuenta asociada
+              </span>
+              <strong className="text-core-navy dark:text-white text-right">
+                {request.cliente}
+              </strong>
+            </div>
+
+            <div className="p-3.5 flex items-center justify-between gap-2">
+              <span className="text-core-muted flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-core-cyan shrink-0" />
+                Rol responsable
+              </span>
+              <strong className="text-core-navy dark:text-white text-right">
+                {request.responsable} ({request.departamento})
+              </strong>
+            </div>
+
+            {/* Bloque de Aprobación con validación lógica de edición y permisos de rol */}
+            <div className="p-3.5 space-y-2 bg-core-violet/4 dark:bg-core-violet/10">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-core-muted flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-core-violet shrink-0" />
+                  Control de aprobación
+                </span>
+                <strong className="text-core-violet dark:text-indigo-300 text-right">
+                  {edition === 'business'
+                    ? request.nivelAprobacion
+                    : 'Flujo estándar (Plan Start)'}
+                </strong>
+              </div>
+
+              {request.nivelAprobacion !== 'Validado' && (
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-[11px] text-core-muted dark:text-slate-300">
+                    Rol activo: <strong>{activeRole}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleTryApprove}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                      approvalPermission.allowed
+                        ? 'bg-core-violet text-white hover:bg-core-violet-hover'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {!approvalPermission.allowed && <Lock className="w-3 h-3" />}
+                    Validar nivel actual
+                  </button>
+                </div>
+              )}
+
+              {permissionNotice && (
+                <div className="mt-2 p-2.5 rounded-lg bg-[#FEF6E0] dark:bg-amber-950/60 border border-amber-300/80 dark:border-amber-800 text-[11px] text-[#B45309] dark:text-amber-300 flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{permissionNotice}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bitácora de seguimiento */}
+          <div className="space-y-2.5">
+            <p className="text-xs font-bold text-core-navy dark:text-white">
+              Bitácora de trazabilidad ({notes.length})
+            </p>
+            <div className="space-y-2">
+              {notes.map((n, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-core-cloud/60 dark:bg-[#101228] border border-core-border/80 dark:border-[#282C5A] text-xs"
+                >
+                  <div className="flex items-center justify-between text-[11px] text-core-muted mb-1">
+                    <strong className="text-core-navy dark:text-slate-200">{n.author}</strong>
+                    <span>{n.time}</span>
+                  </div>
+                  <p className="text-core-navy dark:text-slate-300">{n.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Pie para agregar nota de seguimiento */}
+        <form
+          onSubmit={handleAddNote}
+          className="p-4 border-t border-core-border dark:border-[#282C5A] bg-core-cloud/40 dark:bg-[#101228] flex items-center gap-2"
+        >
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Añadir observación o nota de avance..."
+            className="h-10 flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+          />
+          <Button type="submit" variant="primary" size="md">
+            Registrar
+          </Button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export function AiAssistantDrawer({ isOpen, onClose, edition, unifiedMetrics }) {
+  const [prompt, setPrompt] = useState('')
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      text: 'Asistente operativo de CoreFlow activo. Consulto directamente la fuente centralizada de indicadores del entorno.',
+    },
+  ])
+
+  if (!isOpen) return null
+
+  const triggerQuickPrompt = (q) => {
+    const acum = unifiedMetrics?.acumulados
+    const per = unifiedMetrics?.periodo
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text: q },
+      {
+        role: 'assistant',
+        text: `Corte sincronizado (${edition.toUpperCase()} · ${
+          per?.label || 'Últimos 7 días'
+        }): ${acum?.solicitudesEnSeguimiento || 9} solicitudes en seguimiento activo, ${
+          per?.solicitudesResueltas || 34
+        } resueltas en el período (${per?.solicitudesGestionadas || 42} gestionadas en total) y ${
+          acum?.tareasPendientesActuales || 24
+        } tareas pendientes en inventario.`,
+      },
+    ])
+  }
+
+  const handleSend = (e) => {
+    e.preventDefault()
+    if (!prompt.trim()) return
+    const q = prompt.trim()
+    setPrompt('')
+    triggerQuickPrompt(q)
+  }
+
+  return (
     <div className="fixed inset-0 z-50 flex justify-end bg-core-navy/50 backdrop-blur-xs">
-      <div className="w-full max-w-md bg-white dark:bg-[#171936] h-full border-l border-core-border dark:border-[#282C5A] shadow-2xl flex flex-col justify-between">
+      <div className="w-full sm:max-w-md bg-white dark:bg-[#171936] h-full border-l border-core-border dark:border-[#282C5A] shadow-2xl flex flex-col justify-between">
         <div className="p-5 bg-core-navy text-white flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-core-violet flex items-center justify-center">
@@ -145,7 +495,7 @@ export function AiAssistantDrawer({ isOpen, onClose, edition }) {
             <div>
               <h3 className="text-sm font-bold">Asistente Operativo CoreFlow</h3>
               <p className="text-[11px] text-slate-300">
-                Consulta contextual sobre procesos y tareas
+                Sincronizado con almacén central · Edición {edition === 'business' ? 'Business' : 'Start'}
               </p>
             </div>
           </div>
@@ -159,6 +509,23 @@ export function AiAssistantDrawer({ isOpen, onClose, edition }) {
         </div>
 
         <div className="flex-1 p-5 overflow-y-auto space-y-3">
+          <div className="flex flex-wrap gap-1.5 pb-2">
+            {[
+              'Corte de solicitudes del período',
+              'Estado de aprobaciones',
+              'Balance de tareas e inventario',
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => triggerQuickPrompt(suggestion)}
+                className="px-2.5 py-1 rounded-lg bg-core-violet/8 dark:bg-core-violet/20 text-core-violet dark:text-indigo-300 text-[11px] font-semibold hover:bg-core-violet hover:text-white transition-colors"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+
           {messages.map((m, i) => (
             <div
               key={i}
@@ -181,11 +548,11 @@ export function AiAssistantDrawer({ isOpen, onClose, edition }) {
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Consultar solicitudes, tareas o documentos..."
-            className="flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 py-2.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+            placeholder="Consultar indicadores o solicitudes..."
+            className="h-10 flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
           />
           <Button type="submit" variant="primary" size="md" icon={Send} iconPosition="left">
-            Enviar
+            Consultar
           </Button>
         </form>
       </div>

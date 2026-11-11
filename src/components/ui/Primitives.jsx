@@ -178,6 +178,7 @@ export function KpiCard({
   deltaLabel = 'vs. corte anterior',
   deltaDirection = 'up',
   subtitle,
+  scopeBadge = 'Acumulado actual',
   breakdown,
   progress = 72,
   accentColor = 'violet',
@@ -216,7 +217,7 @@ export function KpiCard({
     <SurfaceCard
       interactive={Boolean(onClick)}
       onClick={onClick}
-      className={`p-5 flex flex-col justify-between min-h-[154px] ${
+      className={`p-5 flex flex-col justify-between min-h-[164px] ${
         active ? 'ring-2 ring-core-violet border-core-violet' : ''
       }`}
     >
@@ -240,14 +241,21 @@ export function KpiCard({
         />
       </svg>
 
-      {/* Fila Superior: Título + Icono de módulo */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <span className="text-[13px] font-semibold text-core-muted dark:text-slate-300 tracking-tight">
-            {title}
-          </span>
+      {/* Fila Superior: Título + Etiqueta de Alcance (Acumulado vs Período) + Icono */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[13px] font-semibold text-core-navy dark:text-slate-100 tracking-tight">
+              {title}
+            </span>
+            {scopeBadge && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-core-cloud dark:bg-[#101228] text-core-muted dark:text-slate-300 border border-core-border/80 dark:border-[#282C5A]">
+                {scopeBadge}
+              </span>
+            )}
+          </div>
           {subtitle && (
-            <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] text-core-muted dark:text-slate-400 mt-0.5 truncate">
               {subtitle}
             </p>
           )}
