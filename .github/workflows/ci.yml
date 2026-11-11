@@ -42,5 +42,8 @@ jobs:
       - name: Ejecutar pruebas de migraciones y RLS (nivel SIMULADA, PostgreSQL embebido)
         run: npm run test:db
 
+      - name: Ejecutar pruebas de la capa de servicios (nivel SIMULADA, sin Supabase real)
+        run: npm run test:services
+
       - name: Compilar bundle de producción (Vite Build)
         run: npm run build

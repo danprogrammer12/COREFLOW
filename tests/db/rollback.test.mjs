@@ -39,7 +39,7 @@ test('008 a 012 se revierten al esquema de 007 y se pueden reaplicar', async () 
     const migrated = await snapshot(db)
     assert.notDeepEqual(migrated.policies, baseline.policies)
 
-    for (const number of [12, 11, 10, 9, 8]) {
+    for (const number of [13, 12, 11, 10, 9, 8]) {
       await applyRollback(db, number)
     }
     const reverted = await snapshot(db)

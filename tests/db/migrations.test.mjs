@@ -14,9 +14,10 @@ const MIGRATION_003 = join(
   '..', '..', 'supabase', 'migrations', '003_audit_and_security_rls.sql'
 )
 
-test('001 a 012 existen, son consecutivas y se ejecutan en orden desde cero', async () => {
+test('las migraciones existen, son consecutivas y se ejecutan en orden desde cero', async () => {
   const numbers = listMigrations().map((f) => Number.parseInt(f, 10))
-  assert.deepEqual(numbers, Array.from({ length: 12 }, (_, i) => i + 1))
+  assert.ok(numbers.length >= 12)
+  assert.deepEqual(numbers, Array.from({ length: numbers.length }, (_, i) => i + 1))
 
   const db = await createDatabase()
   try {
