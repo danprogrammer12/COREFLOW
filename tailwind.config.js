@@ -26,6 +26,8 @@ export default {
           cloud: '#F4F5FA',
           border: '#E2E6F2',
           muted: '#64748B',
+          body: '#566275',
+          'lime-ink': '#5A8700',
         }
       },
       fontFamily: {

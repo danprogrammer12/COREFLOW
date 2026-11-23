@@ -9,12 +9,19 @@
  *  C. TENANT_WORKSPACE — CoreFlow Business (Organización con suscripción Business)
  */
 
-import React, { useContext, useState, useMemo, useCallback } from 'react'
+import React, { lazy, Suspense, useContext, useState, useMemo, useCallback } from 'react'
 import { createCoreFlowEngine } from '../../core/index.js'
 import { DATA_MODES, resolveDataMode } from '../../core/backend/index.js'
-import { getSupabaseConfigStatus, isSupabaseConfigured } from '../../lib/supabaseClient.js'
+import { getSupabaseConfigStatus, isSupabaseConfigured } from '../../lib/supabaseConfig.js'
 import { CoreFlowContext } from './coreFlowContextObject.js'
-import { ConnectionScreen, SupabaseCoreFlowProvider } from './SupabaseCoreFlowProvider.jsx'
+
+// El SDK de Supabase solo se descarga cuando el modo de datos lo exige (no en la landing con datos locales)
+const SupabaseCoreFlowProvider = lazy(() =>
+  import('./SupabaseCoreFlowProvider.jsx').then((m) => ({ default: m.SupabaseCoreFlowProvider }))
+)
+const ConnectionScreen = lazy(() =>
+  import('./SupabaseCoreFlowProvider.jsx').then((m) => ({ default: m.ConnectionScreen }))
+)
 
 const ROLE_LABEL_BY_CODE = {
   ORG_ADMIN: 'Administrador Organizacional',
@@ -42,10 +49,16 @@ function readDataMode() {
 export function CoreFlowProvider({ children }) {
   const [resolved] = useState(readDataMode)
   if (resolved.error) {
-    return <ConnectionScreen title="Configuración de datos inválida" message={resolved.error.message} />
+    return (
+      <Suspense fallback={null}>
+        <ConnectionScreen title="Configuración de datos inválida" message={resolved.error.message} />
+      </Suspense>
+    )
   }
   return resolved.mode === DATA_MODES.SUPABASE ? (
-    <SupabaseCoreFlowProvider>{children}</SupabaseCoreFlowProvider>
+    <Suspense fallback={null}>
+      <SupabaseCoreFlowProvider>{children}</SupabaseCoreFlowProvider>
+    </Suspense>
   ) : (
     <LocalCoreFlowProvider>{children}</LocalCoreFlowProvider>
   )
