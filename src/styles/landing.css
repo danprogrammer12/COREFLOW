@@ -1,0 +1,692 @@
+/* Landing v2: utilidades de movimiento y escenas. Todo bajo el prefijo lf- */
+
+.lf-root {
+  --lf-cut: clamp(24px, 6vw, 88px);
+}
+
+/* Entrada de bloques: visibles sin JS; solo se ocultan cuando la vista se "arma" */
+.lf-reveal {
+  transition:
+    opacity 480ms var(--cf-ease-out) var(--lf-delay, 0ms),
+    transform 480ms var(--cf-ease-out) var(--lf-delay, 0ms);
+}
+.lf-armed .lf-reveal:not([data-in]) {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* Cortes diagonales (~4 grados) solo en las transiciones claro/oscuro.
+   Un triangulo pequeno del color de la seccion vecina tapa la esquina: evita clip-path sobre secciones enormes. */
+.lf-dark-section {
+  position: relative;
+  padding-top: calc(var(--lf-cut) + 72px);
+  padding-bottom: 72px;
+}
+.lf-dark-section::before,
+.lf-dark-section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--lf-cut);
+  pointer-events: none;
+  z-index: 2;
+}
+.lf-dark-section::before {
+  top: -1px;
+  background: var(--lf-prev, #fff);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.lf-dark-section.lf-cut-both::after {
+  bottom: -1px;
+  background: var(--lf-next, #fff);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+@media (min-width: 1024px) {
+  .lf-dark-section {
+    padding-top: calc(var(--lf-cut) + 112px);
+    padding-bottom: 112px;
+  }
+}
+
+/* Entrada de elementos dentro de las escenas (se montan al seleccionarlas) */
+@keyframes lf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lf-scene-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lf-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lf-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes lf-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.lf-in {
+  animation: lf-rise 420ms var(--cf-ease-out) both;
+  animation-delay: var(--lf-d, 0ms);
+}
+.lf-pop {
+  animation: lf-pop 320ms var(--cf-ease-out) both;
+  animation-delay: var(--lf-d, 0ms);
+}
+.lf-scene-in {
+  animation: lf-scene-in 220ms var(--cf-ease-out) both;
+}
+.lf-check path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: lf-draw 360ms ease-out forwards;
+  animation-delay: var(--lf-d, 0ms);
+}
+.lf-check.lf-check-static path {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+/* Hilo del hero */
+.lf-thread path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 700ms linear;
+}
+.lf-thread[data-on='true'] path {
+  stroke-dashoffset: 0;
+}
+.lf-thread-wrap {
+  transform: translateX(calc(var(--lf-px, 0) * 6px));
+  transition: transform 200ms ease-out;
+}
+
+/* Elementos de la historia del hero */
+.lf-step {
+  transition:
+    opacity 360ms var(--cf-ease-out),
+    transform 360ms var(--cf-ease-out);
+}
+.lf-step[data-on='false'] {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.lf-station {
+  transition: background-color 300ms ease, border-color 300ms ease;
+}
+
+/* Del caos al orden: variables --p (progreso) y --c (fundido) */
+.lf-frag {
+  --e: calc(1 - var(--p, 0));
+  transform: translate(calc(var(--sx) * 1px * var(--e)), calc(var(--sy) * 1px * var(--e)))
+    rotate(calc(var(--sr) * 1deg * var(--e)));
+  will-change: transform;
+}
+.lf-frag-a {
+  opacity: calc(1 - var(--c, 0));
+}
+.lf-frag-b {
+  opacity: var(--c, 0);
+}
+.lf-colhead {
+  opacity: var(--c, 0);
+}
+.lf-switch-anim .lf-frag {
+  will-change: auto;
+}
+
+/* Pulso de automatización */
+@keyframes lf-pulse {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  42% {
+    transform: translateY(44px);
+    opacity: 1;
+  }
+  48%,
+  100% {
+    transform: translateY(44px);
+    opacity: 0;
+  }
+}
+.lf-pulse {
+  animation: lf-pulse 2.4s linear infinite;
+  animation-delay: var(--lf-d, 0ms);
+  animation-play-state: var(--lf-play, running);
+}
+.lf-pulse[data-off='true'] {
+  animation: none;
+  opacity: 0;
+}
+
+/* Barras de reportes y tarjetas arrastrables */
+.lf-bar {
+  transform-origin: bottom;
+  transition: transform 520ms var(--cf-ease-out);
+}
+.lf-card-drag {
+  touch-action: pan-y;
+}
+
+/* Control deslizante */
+.lf-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lf-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #08c9e8 var(--fill, 0%), rgba(255, 255, 255, 0.45) var(--fill, 0%));
+}
+.lf-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+.lf-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: #08c9e8;
+}
+.lf-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid #08c9e8;
+}
+.lf-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid #08c9e8;
+}
+.lf-range:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.lf-no-scrollbar {
+  scrollbar-width: none;
+}
+.lf-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Atmósfera sobre navy ---------- */
+.lf-atmos {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.lf-mesh-hero {
+  background:
+    radial-gradient(58% 60% at 86% 6%, rgba(101, 69, 232, 0.62), transparent 70%),
+    radial-gradient(46% 52% at 4% 82%, rgba(53, 104, 232, 0.42), transparent 70%),
+    radial-gradient(34% 34% at 60% 102%, rgba(8, 201, 232, 0.26), transparent 70%),
+    radial-gradient(16% 22% at 97% 72%, rgba(166, 233, 28, 0.12), transparent 70%);
+}
+.lf-mesh-a {
+  background:
+    radial-gradient(50% 55% at 100% 0%, rgba(53, 104, 232, 0.34), transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, rgba(101, 69, 232, 0.36), transparent 70%),
+    radial-gradient(22% 28% at 50% 50%, rgba(8, 201, 232, 0.08), transparent 70%);
+}
+.lf-mesh-b {
+  background:
+    radial-gradient(48% 52% at 0% 8%, rgba(101, 69, 232, 0.4), transparent 70%),
+    radial-gradient(52% 55% at 100% 96%, rgba(8, 201, 232, 0.22), transparent 70%),
+    radial-gradient(30% 34% at 78% 20%, rgba(53, 104, 232, 0.26), transparent 70%);
+}
+.lf-mesh-c {
+  background:
+    radial-gradient(50% 60% at 50% 0%, rgba(101, 69, 232, 0.4), transparent 70%),
+    radial-gradient(40% 50% at 100% 100%, rgba(53, 104, 232, 0.34), transparent 70%),
+    radial-gradient(24% 30% at 0% 80%, rgba(166, 233, 28, 0.1), transparent 70%);
+}
+.lf-mesh-d {
+  background:
+    radial-gradient(60% 70% at 50% 120%, rgba(101, 69, 232, 0.6), transparent 70%),
+    radial-gradient(34% 44% at 100% 0%, rgba(8, 201, 232, 0.22), transparent 70%),
+    radial-gradient(30% 40% at 0% 20%, rgba(166, 233, 28, 0.12), transparent 70%);
+}
+.lf-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1.3px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 70% 35%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse 80% 70% at 70% 35%, #000 0%, transparent 75%);
+}
+.lf-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 78%);
+}
+.lf-grain {
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.lf-glow {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--lf-glow, rgba(101, 69, 232, 0.55)), transparent);
+}
+
+/* Vidrio oscuro con propósito: flotantes que se superponen a la escena */
+.lf-glass {
+  background: rgba(16, 18, 40, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 18px 40px -12px rgba(8, 10, 30, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Ventana de app: sombra de color y borde luminoso */
+.lf-win {
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 40px 80px -28px rgba(101, 69, 232, 0.7),
+    0 16px 32px -16px rgba(8, 201, 232, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Brillo que sigue al cursor (--mx/--my los escribe LandingView) y elevación */
+.lf-spot {
+  position: relative;
+  isolation: isolate;
+  --lf-spot: rgba(255, 255, 255, 0.14);
+}
+.lf-spot-light {
+  --lf-spot: rgba(101, 69, 232, 0.12);
+}
+.lf-spot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), var(--lf-spot), transparent 70%);
+}
+.lf-spot:hover::before {
+  opacity: 1;
+}
+.lf-lift {
+  transition:
+    transform 220ms var(--cf-ease-out),
+    box-shadow 220ms var(--cf-ease-out);
+}
+.lf-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 40px -16px rgba(8, 10, 30, 0.55);
+}
+
+/* Parallax: --px/--py por cursor, --sy por scroll */
+.lf-parallax {
+  --px: 0;
+  --py: 0;
+  --sy: 0;
+}
+/* El transform lo escribe Parallax (atmos.jsx) directamente en cada capa */
+.lf-px {
+  transition: transform 260ms ease-out;
+}
+@keyframes lf-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+.lf-bob {
+  animation: lf-bob 6s ease-in-out infinite;
+  animation-delay: var(--lf-d, 0ms);
+  animation-play-state: paused;
+}
+.lf-live .lf-bob {
+  animation-play-state: running;
+}
+
+/* Hilo diagonal decorativo: se dibuja una vez al entrar */
+.lf-draw path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1800ms var(--cf-ease-out);
+}
+.lf-draw[data-in] path {
+  stroke-dashoffset: 0;
+}
+
+/* Marquee de módulos: corre solo cuando está en pantalla */
+@keyframes lf-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.lf-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: lf-marquee 44s linear infinite;
+  animation-play-state: paused;
+}
+.lf-live .lf-marquee-track {
+  animation-play-state: running;
+}
+
+/* Entradas escalonadas dentro de un contenedor revelado */
+.lf-stagger > * {
+  transition:
+    opacity 480ms var(--cf-ease-out) calc(var(--i, 0) * 70ms),
+    transform 480ms var(--cf-ease-out) calc(var(--i, 0) * 70ms);
+}
+.lf-armed .lf-stagger:not([data-in]) > * {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* Movimiento reducido: sin bucles, sin parallax, estados finales visibles */
+@media (prefers-reduced-motion: reduce) {
+  .lf-px {
+    transform: none;
+  }
+  .lf-bob,
+  .lf-marquee-track {
+    animation: none;
+  }
+  .lf-marquee-track {
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .lf-marquee-dup {
+    display: none !important;
+  }
+  .lf-marquee-track > ul {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 40px;
+    padding: 0 24px;
+  }
+  .lf-draw path {
+    stroke-dashoffset: 0;
+  }
+  .lf-lift:hover {
+    transform: none;
+  }
+  .lf-armed .lf-stagger:not([data-in]) > * {
+    opacity: 1;
+    transform: none;
+  }
+  .lf-root *,
+  .lf-root *::before,
+  .lf-root *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lf-armed .lf-reveal:not([data-in]) {
+    opacity: 1;
+    transform: none;
+  }
+  .lf-thread-wrap {
+    transform: none;
+  }
+  .lf-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.lf-win-dark {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 40px 80px -30px rgba(101, 69, 232, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.lf-fade-b {
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+}
+
+/* ---------- Teselado de triángulos de marca (extiende el patrón del login) ----------
+   Capa decorativa: facetas sin trazo en cian, violeta, lima, azul o blanco.
+   Tamaño: --lf-tri-s (escala del mosaico). Máscara: lf-tri-m-* desvanece hacia el texto. */
+.lf-tri {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-size: calc(240px * var(--lf-tri-s, 1)) calc(208px * var(--lf-tri-s, 1));
+  background-repeat: repeat;
+  z-index: 0;
+}
+.lf-tri-lg {
+  --lf-tri-s: 1.7;
+}
+.lf-tri-xl {
+  --lf-tri-s: 2.4;
+}
+.lf-tri-cyan { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%2308C9E8' fill-opacity='0.2' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.07' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.15' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.12' d='M0 104h120L60 208z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.24' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.07' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.17' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E"); }
+.lf-tri-violet { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%238268F2' fill-opacity='0.2' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.07' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.15' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.12' d='M0 104h120L60 208z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.24' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.07' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.17' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E"); }
+.lf-tri-lime { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%23A6E91C' fill-opacity='0.2' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.07' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.15' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.12' d='M0 104h120L60 208z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.24' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.07' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.17' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E"); }
+.lf-tri-blue { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%234F83F0' fill-opacity='0.2' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.07' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.15' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.12' d='M0 104h120L60 208z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.24' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.07' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.17' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E"); }
+.lf-tri-white { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.2' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.07' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.15' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.12' d='M0 104h120L60 208z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.24' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.07' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.17' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E"); }
+.lf-tri-mix { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%2308C9E8' fill-opacity='0.2' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.07' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.15' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.12' d='M0 104h120L60 208z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.24' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.07' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.17' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E"); }
+.lf-tri-edge { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='52'%3E%3Cpath fill='%2308C9E8' fill-opacity='0.9' d='M0 52 30 0l30 52z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.55' d='M60 52 90 0l30 52z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.9' d='M120 52 150 0l30 52z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.55' d='M180 52 210 0l30 52z'/%3E%3Cpath fill='%2308C9E8' fill-opacity='0.9' d='M240 52 270 0l30 52z'/%3E%3Cpath fill='%238268F2' fill-opacity='0.55' d='M300 52 330 0l30 52z'/%3E%3Cpath fill='%23A6E91C' fill-opacity='0.9' d='M360 52 390 0l30 52z'/%3E%3Cpath fill='%234F83F0' fill-opacity='0.55' d='M420 52 450 0l30 52z'/%3E%3C/svg%3E"); }
+
+.lf-tri-m-tr {
+  -webkit-mask-image: linear-gradient(225deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+  mask-image: linear-gradient(225deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+}
+.lf-tri-m-tl {
+  -webkit-mask-image: linear-gradient(135deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+  mask-image: linear-gradient(135deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+}
+.lf-tri-m-br {
+  -webkit-mask-image: linear-gradient(315deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+  mask-image: linear-gradient(315deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+}
+.lf-tri-m-bl {
+  -webkit-mask-image: linear-gradient(45deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+  mask-image: linear-gradient(45deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 52%);
+}
+.lf-tri-m-r {
+  -webkit-mask-image: linear-gradient(270deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 46%);
+  mask-image: linear-gradient(270deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 46%);
+}
+.lf-tri-m-l {
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 46%);
+  mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.5) 20%, transparent 46%);
+}
+.lf-tri-m-t {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.45) 22%, transparent 48%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.45) 22%, transparent 48%);
+}
+.lf-tri-m-b {
+  -webkit-mask-image: linear-gradient(0deg, #000 0%, rgba(0, 0, 0, 0.45) 22%, transparent 48%);
+  mask-image: linear-gradient(0deg, #000 0%, rgba(0, 0, 0, 0.45) 22%, transparent 48%);
+}
+/* Bordes laterales visibles y centro limpio (donde vive el texto) */
+.lf-tri-m-x {
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.35) 18%, transparent 36%, transparent 64%, rgba(0, 0, 0, 0.35) 82%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.35) 18%, transparent 36%, transparent 64%, rgba(0, 0, 0, 0.35) 82%, #000 100%);
+}
+@media (max-width: 767px) {
+  .lf-tri {
+    --lf-tri-s: 0.8;
+    opacity: 0.6;
+  }
+  .lf-tri-lg,
+  .lf-tri-xl {
+    --lf-tri-s: 1.1;
+  }
+}
+
+/* Separador diagonal: fila de triángulos de marca en el borde de una sección */
+.lf-tri-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26px;
+  pointer-events: none;
+  background-size: 240px 26px;
+  background-repeat: repeat-x;
+  z-index: 3;
+  opacity: 0.85;
+}
+.lf-tri-edge-top {
+  top: 0;
+  transform: scaleY(-1);
+}
+.lf-tri-edge-bottom {
+  bottom: 0;
+}
+
+/* Borde luminoso de marca: degradado de 1.5 px alrededor de una superficie */
+.lf-glow-border {
+  position: relative;
+}
+.lf-glow-border::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, var(--lf-gb-a, #08c9e8), var(--lf-gb-b, #6545e8) 55%, var(--lf-gb-c, #a6e91c));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Superficies de marca para las zonas que antes eran blancas */
+.lf-panel-brand {
+  background:
+    radial-gradient(60% 70% at 0% 0%, rgba(8, 201, 232, 0.32), transparent 65%),
+    radial-gradient(55% 70% at 100% 10%, rgba(101, 69, 232, 0.55), transparent 70%),
+    radial-gradient(45% 60% at 80% 100%, rgba(53, 104, 232, 0.5), transparent 70%),
+    radial-gradient(22% 30% at 0% 100%, rgba(166, 233, 28, 0.14), transparent 70%),
+    #181b4a;
+}
+.lf-card-glass {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.lf-tint-cyan {
+  background: linear-gradient(160deg, #d9f6fc 0%, #e7edff 100%);
+}
+.lf-tint-violet {
+  background: linear-gradient(160deg, #e6e0fd 0%, #dbe8ff 100%);
+}
+.lf-tint-lime {
+  background: linear-gradient(160deg, #e9f9c4 0%, #d5f3f7 100%);
+}
+.lf-tint-blue {
+  background: linear-gradient(160deg, #dbe8ff 0%, #e6e0fd 100%);
+}
+.lf-win-tint {
+  background: linear-gradient(165deg, #f1eeff 0%, #e4f1ff 55%, #ddf7fb 100%);
+}
+.lf-head-tint {
+  background: linear-gradient(90deg, #e7e1fe, #d9f4fb);
+}
+.lf-bar-brand {
+  background: linear-gradient(90deg, #08c9e8, #3568e8 40%, #6545e8 70%, #a6e91c);
+}
+.lf-tri-navy {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='208'%3E%3Cpath fill='%23101228' fill-opacity='.30' d='M0 104 60 0l60 104z'/%3E%3Cpath fill='%23101228' fill-opacity='.08' d='M60 0h120l-60 104z'/%3E%3Cpath fill='%23101228' fill-opacity='.20' d='M120 104 180 0l60 104z'/%3E%3Cpath fill='%23101228' fill-opacity='.05' d='M180 0h60v104zM0 0h60L0 104z'/%3E%3Cpath fill='%23101228' fill-opacity='.16' d='M0 104h120L60 208z'/%3E%3Cpath fill='%23101228' fill-opacity='.34' d='M60 208l60-104 60 104z'/%3E%3Cpath fill='%23101228' fill-opacity='.08' d='M120 104h120l-60 104z'/%3E%3Cpath fill='%23101228' fill-opacity='.22' d='M180 208l60-104v104zM0 104v104h60z'/%3E%3C/svg%3E");
+}
+.lf-tri-m-none {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Pantalla de demo: estado de carga con el isotipo que se arma pieza a pieza */
+.lf-demo-ring {
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, #08c9e8, #6545e8, #a6e91c, #08c9e8);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  opacity: 0.85;
+  animation: lf-demo-spin 3.2s linear infinite;
+}
+.lf-demo-iso path {
+  animation: lf-demo-piece 1.6s ease-in-out infinite;
+}
+.lf-demo-iso path:nth-of-type(2) { animation-delay: 0.2s; }
+.lf-demo-iso path:nth-of-type(3) { animation-delay: 0.4s; }
+.lf-demo-iso path:nth-of-type(4) { animation-delay: 0.6s; }
+@keyframes lf-demo-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes lf-demo-piece {
+  0%, 100% { opacity: 0.3; }
+  45%, 70% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lf-demo-ring,
+  .lf-demo-iso path {
+    animation: none;
+  }
+}

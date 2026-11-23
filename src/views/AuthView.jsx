@@ -97,7 +97,7 @@ function BackToLogin({ onClick }) {
   )
 }
 
-export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = false }) {
+export function AuthView({ onAuthenticate, onRequestPasswordReset, onBackToHome, isDemoData = false }) {
   const [mode, setMode] = useState('login') // 'login' | 'recover' | 'recover-sent'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -212,7 +212,19 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, isDemoData = 
         </div>
       </aside>
 
-      <main className="flex items-center justify-center px-6 py-12 sm:px-10">
+      <main className="relative flex items-center justify-center px-6 py-12 sm:px-10">
+        <a
+          href="#/"
+          onClick={(e) => {
+            if (!onBackToHome) return
+            e.preventDefault()
+            onBackToHome()
+          }}
+          className={`absolute left-6 top-6 inline-flex items-center gap-1.5 rounded text-sm font-medium text-core-muted hover:text-core-navy sm:left-10 ${FOCUS_OUTLINE}`}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Volver al inicio
+        </a>
         <div className="w-full max-w-[400px]">
           <div className="mb-10 lg:hidden">
             <CoreFlowLogo variant="horizontal" theme="light" size="md" showSlogan />

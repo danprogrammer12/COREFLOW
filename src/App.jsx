@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react'
+import React, { lazy, Suspense, useState, useEffect } from 'react'
 import { CoreFlowProvider, useCoreFlow } from './adapters/react/CoreFlowContext'
-import { AppShell } from './components/layout/AppShell'
-import { DashboardView } from './views/DashboardView'
-import { DesignSystemView } from './views/DesignSystemView'
-import { AuthView } from './views/AuthView'
-import { PlatformAdminView } from './views/PlatformAdminView'
-import { ModulesPreviewView } from './views/ModulesPreviewView'
-import { ToastNotification } from './components/ui/Primitives'
+import { LandingView } from './views/LandingView'
 import { PrivacyProvider, usePrivacy } from './components/privacy/PrivacyProvider'
-import { LegalCenterView } from './views/LegalCenterView'
+
+// Todo lo que la landing no necesita se descarga bajo demanda
+const lazyNamed = (loader, name) => lazy(() => loader().then((m) => ({ default: m[name] })))
+const AppShell = lazyNamed(() => import('./components/layout/AppShell'), 'AppShell')
+const DashboardView = lazyNamed(() => import('./views/DashboardView'), 'DashboardView')
+const DesignSystemView = lazyNamed(() => import('./views/DesignSystemView'), 'DesignSystemView')
+const AuthView = lazyNamed(() => import('./views/AuthView'), 'AuthView')
+const PlatformAdminView = lazyNamed(() => import('./views/PlatformAdminView'), 'PlatformAdminView')
+const ModulesPreviewView = lazyNamed(() => import('./views/ModulesPreviewView'), 'ModulesPreviewView')
+const LegalCenterView = lazyNamed(() => import('./views/LegalCenterView'), 'LegalCenterView')
+const ToastNotification = lazyNamed(() => import('./components/ui/Primitives'), 'ToastNotification')
+const NewRequestModal = lazyNamed(() => import('./components/modals/QuickActionModals'), 'NewRequestModal')
+const RequestDetailDrawer = lazyNamed(() => import('./components/modals/QuickActionModals'), 'RequestDetailDrawer')
+const DemoView = lazyNamed(() => import('./views/DemoView'), 'DemoView')
 
 const THEME_KEY = 'coreflow_ui_theme'
 
@@ -21,10 +28,6 @@ function useHashRoute() {
   }, [])
   return hash
 }
-import {
-  NewRequestModal,
-  RequestDetailDrawer,
-} from './components/modals/QuickActionModals'
 
 function CoreFlowWorkspace() {
   const {
@@ -96,6 +99,8 @@ function CoreFlowWorkspace() {
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   const [selectedRequestId, setSelectedRequestId] = useState(null)
   const [actionError, setActionError] = useState(null)
+  const [pendingDemoId, setPendingDemoId] = useState(null)
+  const [demoError, setDemoError] = useState(null)
 
   useEffect(() => {
     const root = document.documentElement
@@ -137,6 +142,7 @@ function CoreFlowWorkspace() {
   const handleAuthenticate = async (credentials) => {
     const res = await authenticateAccount(credentials)
     if (res.ok) {
+      if (window.location.hash === '#/acceso') history.replaceState(null, '', window.location.pathname + window.location.search)
       setShowAuthScreen(false)
       setSelectedRequestId(null)
       setActiveView('dashboard')
@@ -154,9 +160,92 @@ function CoreFlowWorkspace() {
     setShowAuthScreen(true)
   }
 
+  const goToLogin = () => {
+    setShowAuthScreen(true)
+    window.location.hash = '#/acceso'
+  }
+
+  const goToDemo = () => {
+    setShowAuthScreen(false)
+    setDemoError(null)
+    window.location.hash = '#/demo'
+  }
+
+  // showAuthScreen sigue en true tras ir al login; hay que apagarlo para que la landing vuelva a mostrarse
+  const goToHome = () => {
+    setShowAuthScreen(false)
+    setDemoError(null)
+    window.location.hash = '#/'
+  }
+
+  const handleStartDemo = async (demo) => {
+    setDemoError(null)
+    setPendingDemoId(demo.id)
+    try {
+      const res = await authenticateAccount({ email: demo.email, password: '' })
+      if (res?.ok === false) setDemoError('No se pudo abrir la demo. Inténtalo de nuevo.')
+      else {
+        setShowAuthScreen(false)
+        setActiveView('dashboard')
+        if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    } catch {
+      setDemoError('No se pudo abrir la demo. Inténtalo de nuevo.')
+    } finally {
+      setPendingDemoId(null)
+    }
+  }
+
+  // La autenticación demo es síncrona; la pausa deja ver la transición de carga en vez de un parpadeo
+  const DEMO_TRANSITION_MS = 900
+  const startDemoWithTransition = async (demo) => {
+    if (pendingDemoId) return
+    setDemoError(null)
+    setPendingDemoId(demo.id)
+    await new Promise((resolve) => setTimeout(resolve, DEMO_TRANSITION_MS))
+    // Si la persona volvió atrás mientras cargaba, se cancela en vez de abrir el dashboard por sorpresa
+    if (!window.location.hash.startsWith('#/demo')) {
+      setPendingDemoId(null)
+      return
+    }
+    await handleStartDemo(demo)
+  }
+
+  // Desde un plan de la landing: abre la pantalla de demo y arranca ese plan directo
+  const startDemoFromLanding = (demo) => {
+    goToDemo()
+    return startDemoWithTransition(demo)
+  }
+
   // 0. Centro legal: accesible con o sin sesión
   if (route.startsWith('#/legal')) {
     return <LegalCenterView slug={route.split('/')[2] || 'privacidad'} onSubmitPrivacyRequest={submitPrivacyRequest} />
+  }
+
+  // 0.4 Pantalla de demo (solo con datos de ejemplo): elegir Starter o Business
+  if (!isAuthenticated && isDemoData && route.startsWith('#/demo')) {
+    return (
+      <DemoView
+        onStartDemo={startDemoWithTransition}
+        pendingDemoId={pendingDemoId}
+        demoError={demoError}
+        onBack={goToHome}
+      />
+    )
+  }
+
+  // 0.5 Landing pública: primera pantalla para quien llega sin sesión
+  if (!isAuthenticated && !showAuthScreen && !route.startsWith('#/acceso')) {
+    return (
+      <LandingView
+        isDemoData={isDemoData}
+        onStartDemo={startDemoFromLanding}
+        onOpenDemo={goToDemo}
+        pendingDemoId={pendingDemoId}
+        demoError={demoError}
+        onLogin={goToLogin}
+      />
+    )
   }
 
   // 1. Pantalla de Autenticación real cuando no hay sesión o el usuario solicita cambiar cuenta
@@ -165,6 +254,7 @@ function CoreFlowWorkspace() {
       <AuthView
         onAuthenticate={handleAuthenticate}
         onRequestPasswordReset={requestPasswordReset}
+        onBackToHome={goToHome}
         isDemoData={isDemoData}
       />
     )
@@ -335,7 +425,9 @@ export default function App() {
   return (
     <CoreFlowProvider>
       <PrivacyLayer>
-        <CoreFlowWorkspace />
+        <Suspense fallback={<div className="min-h-screen bg-core-navy-deep" aria-busy="true" />}>
+          <CoreFlowWorkspace />
+        </Suspense>
       </PrivacyLayer>
     </CoreFlowProvider>
   )
