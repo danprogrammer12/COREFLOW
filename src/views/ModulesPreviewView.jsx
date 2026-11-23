@@ -13,7 +13,7 @@ const MUTED = 'text-core-muted dark:text-slate-400'
 const FOCUS =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-core-violet'
 const FIELD = `h-10 w-full rounded-xl border ${RULE} bg-core-cloud/50 dark:bg-[#101228] px-3 text-xs ${STRONG}`
-const COLUMN_HEAD = `text-left text-[11px] font-semibold ${MUTED} py-2.5 px-4`
+const COLUMN_HEAD = `text-left text-[11px] font-semibold ${MUTED} py-2.5 px-3 sm:px-4`
 
 const includes = (value, query) => String(value || '').toLowerCase().includes(query.toLowerCase())
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`
@@ -35,7 +35,7 @@ function Segmented({ label, options, value, onChange }) {
           type="button"
           aria-pressed={value === option.id}
           onClick={() => onChange(option.id)}
-          className={`h-8 px-3 rounded-lg text-xs font-semibold tabular-nums transition-colors ${FOCUS} ${
+          className={`h-10 sm:h-8 px-3 rounded-lg text-xs font-semibold tabular-nums transition-colors ${FOCUS} ${
             value === option.id
               ? 'bg-core-navy text-white dark:bg-white dark:text-core-navy'
               : `${MUTED} hover:bg-core-cloud dark:hover:bg-white/5`
@@ -94,7 +94,7 @@ function ClientsModule({ clients, requests, onOpenNewRequest }) {
       <section className={PANEL}>
         <Toolbar>
           <SearchInput
-            placeholder="Buscar por nombre, NIT o sector"
+            placeholder="Buscar cliente o NIT"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onClear={() => setQuery('')}
@@ -710,19 +710,28 @@ function ReportsModule({ isDemoData, requests, tasks, clients, opportunities, do
                 <tr className={`border-b ${RULE}`}>
                   <th className={COLUMN_HEAD}>Responsable</th>
                   <th className={`${COLUMN_HEAD} hidden sm:table-cell`}>Área</th>
-                  <th className={`${COLUMN_HEAD} text-right`}>Asignadas</th>
-                  <th className={`${COLUMN_HEAD} text-right`}>Resueltas</th>
-                  <th className={`${COLUMN_HEAD} text-right`}>Resuelto</th>
+                  <th className={`${COLUMN_HEAD} text-right`}>
+                    <span className="sm:hidden">Asig.</span>
+                    <span className="hidden sm:inline">Asignadas</span>
+                  </th>
+                  <th className={`${COLUMN_HEAD} text-right`}>
+                    <span className="sm:hidden">Resu.</span>
+                    <span className="hidden sm:inline">Resueltas</span>
+                  </th>
+                  <th className={`${COLUMN_HEAD} text-right`}>
+                    <span className="sm:hidden">%</span>
+                    <span className="hidden sm:inline">Resuelto</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-core-border/70 dark:divide-[#282C5A]">
                 {ranked.map((row) => (
                   <tr key={row.id}>
-                    <td className={`py-3 px-4 font-medium ${STRONG}`}>{row.owner}</td>
-                    <td className={`py-3 px-4 hidden sm:table-cell ${MUTED}`}>{row.area}</td>
-                    <td className={`py-3 px-4 text-right tabular-nums ${MUTED}`}>{row.assigned}</td>
-                    <td className={`py-3 px-4 text-right tabular-nums ${MUTED}`}>{row.resolved}</td>
-                    <td className={`py-3 px-4 text-right tabular-nums font-bold ${STRONG}`}>
+                    <td className={`py-3 px-3 sm:px-4 font-medium ${STRONG}`}>{row.owner}</td>
+                    <td className={`py-3 px-3 sm:px-4 hidden sm:table-cell ${MUTED}`}>{row.area}</td>
+                    <td className={`py-3 px-3 sm:px-4 text-right tabular-nums ${MUTED}`}>{row.assigned}</td>
+                    <td className={`py-3 px-3 sm:px-4 text-right tabular-nums ${MUTED}`}>{row.resolved}</td>
+                    <td className={`py-3 px-3 sm:px-4 text-right tabular-nums font-bold ${STRONG}`}>
                       {row.assigned ? Math.round((row.resolved / row.assigned) * 100) : 0}%
                     </td>
                   </tr>

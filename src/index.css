@@ -71,3 +71,16 @@
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
   background: #2E3366;
 }
+
+/* Móvil: 16 px en campos evita el zoom automático de iOS al enfocar; el scroll no se encadena con la página */
+@media (max-width: 639px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+.cf-scroll-contain {
+  overscroll-behavior: contain;
+}

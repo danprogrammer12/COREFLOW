@@ -51,6 +51,7 @@ export function AppShell({
   const [orgSelectorOpen, setOrgSelectorOpen] = useState(false)
   const [editionInfoOpen, setEditionInfoOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   // Los paneles flotantes no sobreviven a un cambio de módulo.
   useEffect(() => {
@@ -59,6 +60,20 @@ export function AppShell({
     setEditionInfoOpen(false)
     setUserMenuOpen(false)
   }, [activeView])
+
+  // Escape cierra el menú lateral y los paneles flotantes
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setMobileMenuOpen(false)
+      setNotificationsOpen(false)
+      setEditionInfoOpen(false)
+      setOrgSelectorOpen(false)
+      setSearchOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   const isBusiness = edition === 'business'
   const planConfig = EDITION_RULES[edition] || EDITION_RULES.start
@@ -166,7 +181,7 @@ export function AppShell({
     (isBusiness ? 'Grupo Corporativo Andino' : 'Soluciones Ágiles del Caribe')
 
   return (
-    <div className="h-screen w-full overflow-hidden flex flex-col lg:flex-row bg-core-cloud dark:bg-[#0F1126] text-core-navy dark:text-slate-100 transition-colors duration-200">
+    <div className="h-screen h-dvh w-full overflow-hidden flex flex-col lg:flex-row bg-core-cloud dark:bg-[#0F1126] text-core-navy dark:text-slate-100 transition-colors duration-200">
       {/* Overlay móvil */}
       {mobileMenuOpen && (
         <div
@@ -177,7 +192,7 @@ export function AppShell({
 
       {/* A. SIDEBAR LATERAL OSCURO (#171936 Midnight Navy) — 100% ALTURA DEL VIEWPORT */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 h-screen bg-core-navy text-white flex flex-col border-r border-white/10 transition-transform duration-200 ease-out lg:static lg:translate-x-0 shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-[min(18rem,86vw)] lg:w-64 h-screen h-dvh bg-core-navy text-white flex flex-col border-r border-white/10 transition-transform duration-200 ease-out lg:static lg:translate-x-0 shrink-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -186,14 +201,14 @@ export function AppShell({
           <button
             type="button"
             onClick={() => handleNavClick('dashboard')}
-            className="relative z-10 focus:outline-none text-left"
+            className="relative z-10 min-h-11 lg:min-h-0 inline-flex items-center focus:outline-none text-left"
           >
             <CoreFlowLogo variant="horizontal" theme="dark" size="sm" />
           </button>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}
-            className="lg:hidden relative z-10 p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10"
+            className="lg:hidden relative z-10 h-11 w-11 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-white/10"
             aria-label="Cerrar menú"
           >
             <X className="w-5 h-5" />
@@ -240,7 +255,7 @@ export function AppShell({
                 key={item.id}
                 type="button"
                 onClick={() => handleNavClick(item.id)}
-                className={`group relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-150 ${
+                className={`group relative w-full min-h-11 lg:min-h-0 flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? 'bg-core-violet text-white font-semibold shadow-md shadow-core-violet/25'
                     : 'text-slate-300 hover:text-white hover:bg-white/6'
@@ -278,7 +293,7 @@ export function AppShell({
         </nav>
 
         {/* 4. PIE DEL SIDEBAR ANCLADO AL FONDO: PERFIL DEL USUARIO SIEMPRE VISIBLE */}
-        <div className="relative p-3 border-t border-white/10 bg-[#12142B] shrink-0 mt-auto">
+        <div className="relative p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-[#12142B] shrink-0 mt-auto">
           {userMenuOpen && (
             <div className="absolute bottom-full mb-2 left-3 right-3 rounded-xl bg-[#1C2042] border border-white/15 shadow-float p-3 z-50 space-y-2.5">
               <div className="pb-2 border-b border-white/10 space-y-0.5">
@@ -303,14 +318,14 @@ export function AppShell({
                     setUserMenuOpen(false)
                     handleNavClick('configuracion')
                   }}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+                  className="w-full text-left px-2.5 py-2.5 min-h-11 lg:min-h-0 rounded-lg text-sm text-slate-200 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
                 >
                   <Settings className="w-3.5 h-3.5 text-core-cyan" />
                   <span>Configuración de organización</span>
                 </button>
                 <a
                   href="#/legal/privacidad"
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+                  className="w-full text-left px-2.5 py-2.5 min-h-11 lg:min-h-0 rounded-lg text-sm text-slate-200 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-core-cyan" />
                   <span>Privacidad y cookies</span>
@@ -325,7 +340,7 @@ export function AppShell({
                       onOpenAuth?.()
                     }
                   }}
-                  className="w-full text-left px-2.5 py-2 rounded-lg text-xs bg-core-violet hover:bg-core-blue text-white font-semibold flex items-center justify-center gap-2 transition-colors"
+                  className="w-full text-left px-2.5 py-2.5 min-h-11 lg:min-h-0 rounded-lg text-sm bg-core-violet hover:bg-core-blue text-white font-semibold flex items-center justify-center gap-2 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5 text-core-lime" />
                   <span>Cambiar cuenta / Cerrar sesión</span>
@@ -336,8 +351,17 @@ export function AppShell({
 
           <button
             type="button"
+            onClick={onToggleDarkMode}
+            className="sm:hidden w-full min-h-11 mb-1 flex items-center gap-2.5 px-2.5 rounded-xl text-sm text-slate-200 hover:bg-white/6"
+          >
+            {darkMode ? <Sun className="w-4 h-4 text-core-lime" /> : <Moon className="w-4 h-4 text-core-cyan" />}
+            <span>{darkMode ? 'Cambiar a interfaz clara' : 'Cambiar a vista oscura'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setUserMenuOpen((v) => !v)}
-            className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-xl hover:bg-white/6 transition-colors text-left"
+            className="w-full min-h-12 lg:min-h-0 flex items-center justify-between gap-2 px-2 py-1.5 rounded-xl hover:bg-white/6 transition-colors text-left"
             aria-expanded={userMenuOpen}
             aria-label="Menú de perfil del usuario"
           >
@@ -365,7 +389,7 @@ export function AppShell({
       </aside>
 
       {/* CONTENEDOR PRINCIPAL CON SCROLL PROPIO INDEPENDIENTE DEL SIDEBAR */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-screen h-dvh overflow-hidden">
         {/* B. TOPBAR EMPRESARIAL (Sin elementos de demostración ni redirección errónea al Sistema de Diseño) */}
         <header className="shrink-0 z-30 h-16 bg-white/95 dark:bg-[#171936]/95 backdrop-blur-md border-b border-core-border dark:border-[#282C5A] px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4">
           {/* ZONA 1 (Izquierda): Menú Móvil + Indicador de Módulo + Búsqueda Global */}
@@ -373,7 +397,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden h-10 w-10 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-navy dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 shrink-0"
+              className={`lg:hidden h-11 w-11 items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-navy dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 shrink-0 ${searchOpen ? 'hidden md:inline-flex' : 'inline-flex'}`}
               aria-label="Abrir menú de navegación"
             >
               <Menu className="w-5 h-5" />
@@ -386,7 +410,18 @@ export function AppShell({
               </span>
             </div>
 
-            <div className="relative flex-1 min-w-0">
+            {!searchOpen && (
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="md:hidden h-11 w-11 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted dark:text-slate-300 shrink-0"
+                aria-label="Abrir búsqueda"
+              >
+                <Search className="w-4 h-4" strokeWidth={1.85} />
+              </button>
+            )}
+
+            <div className={`relative flex-1 min-w-0 ${searchOpen ? '' : 'hidden md:block'}`}>
               <Search
                 className="w-4 h-4 text-core-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
                 strokeWidth={1.8}
@@ -397,7 +432,8 @@ export function AppShell({
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Buscar solicitudes, códigos o cuentas..."
                 aria-label="Buscar en CoreFlow"
-                className={`h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/75 dark:bg-[#101228] pl-10 ${
+                autoFocus={searchOpen}
+                className={`h-11 md:h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-core-cloud/75 dark:bg-[#101228] pl-10 ${
                   searchQuery ? 'pr-9' : 'pr-3.5'
                 } text-xs sm:text-sm text-core-navy dark:text-white placeholder:text-core-muted focus:bg-white dark:focus:bg-[#141736] focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/20 transition-all truncate`}
               />
@@ -407,16 +443,29 @@ export function AppShell({
                   onClick={() => onSearchChange('')}
                   title="Limpiar búsqueda"
                   aria-label="Limpiar búsqueda"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-core-muted hover:text-core-navy dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 inline-flex items-center justify-center rounded-md text-core-muted hover:text-core-navy dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
+
+            {searchOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchOpen(false)
+                  onSearchChange('')
+                }}
+                className="md:hidden h-11 px-3 rounded-xl text-sm font-semibold text-core-violet dark:text-indigo-300 shrink-0"
+              >
+                Cancelar
+              </button>
+            )}
           </div>
 
           {/* ZONA 2 (Derecha): Organización + Suscripción Activa + Utilidades Operativas */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className={`items-center gap-1.5 sm:gap-2.5 shrink-0 ${searchOpen ? 'hidden md:flex' : 'flex'}`}>
             {isDemoData && (
               <span className="hidden md:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-[#B45309] dark:text-amber-300 border border-amber-500/30 whitespace-nowrap">
                 Datos de demostración
@@ -484,7 +533,7 @@ export function AppShell({
             {/* Indicador de Suscripción Contratada */}
             <div className="relative flex items-center">
               <div
-                className="h-10 inline-flex items-center rounded-xl bg-core-cloud dark:bg-[#101228] px-2.5 border border-core-border dark:border-[#282C5A] gap-2"
+                className="h-11 sm:h-10 inline-flex items-center rounded-xl bg-core-cloud dark:bg-[#101228] pl-2.5 pr-1 sm:pr-2.5 border border-core-border dark:border-[#282C5A] gap-2"
                 role="status"
                 aria-label="Suscripción activa de la organización"
               >
@@ -494,8 +543,11 @@ export function AppShell({
                   }`}
                 />
                 <span className="text-xs font-extrabold text-core-navy dark:text-white">
-                  {entitlementsResolved?.contractedPlanName ||
-                    (isBusiness ? 'CoreFlow Business' : 'CoreFlow Starter')}
+                  <span className="sm:hidden">{isBusiness ? 'Business' : 'Starter'}</span>
+                  <span className="hidden sm:inline">
+                    {entitlementsResolved?.contractedPlanName ||
+                      (isBusiness ? 'CoreFlow Business' : 'CoreFlow Starter')}
+                  </span>
                 </span>
                 <span className="hidden md:inline text-[11px] font-semibold px-1.5 py-0.5 rounded bg-core-violet/10 text-core-violet dark:text-indigo-300 tabular-nums">
                   {collabStatus.current}/{collabStatus.max} colab.
@@ -508,7 +560,7 @@ export function AppShell({
                     setNotificationsOpen(false)
                     setOrgSelectorOpen(false)
                   }}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-core-muted hover:text-core-violet dark:hover:text-white"
+                  className="inline-flex h-9 w-9 sm:h-7 sm:w-7 items-center justify-center rounded-lg text-core-muted hover:text-core-violet dark:hover:text-white"
                   title="Consultar capacidades y límites de la suscripción"
                   aria-label="Información de suscripción"
                 >
@@ -517,7 +569,7 @@ export function AppShell({
               </div>
 
               {editionInfoOpen && (
-                <div className="absolute right-0 top-12 w-80 sm:w-96 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-4 z-50">
+                <div className="fixed inset-x-3 top-[4.25rem] max-h-[calc(100dvh-6rem)] overflow-y-auto cf-scroll-contain sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-96 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-4 z-50">
                   <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-core-border dark:border-[#282C5A]">
                     <div>
                       <p className="text-xs font-bold text-core-navy dark:text-white">
@@ -530,7 +582,8 @@ export function AppShell({
                     <button
                       type="button"
                       onClick={() => setEditionInfoOpen(false)}
-                      className="text-slate-400 hover:text-core-navy dark:hover:text-white"
+                      aria-label="Cerrar información de suscripción"
+                      className="h-10 w-10 -mr-2 -mt-2 inline-flex items-center justify-center text-slate-400 hover:text-core-navy dark:hover:text-white"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -567,7 +620,7 @@ export function AppShell({
             <button
               type="button"
               onClick={onToggleDarkMode}
-              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted dark:text-slate-300 hover:text-core-navy dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted dark:text-slate-300 hover:text-core-navy dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
               title={darkMode ? 'Cambiar a Interfaz Clara' : 'Cambiar a Vista Oscura'}
               aria-label="Alternar tema visual"
             >
@@ -583,7 +636,7 @@ export function AppShell({
                   setOrgSelectorOpen(false)
                   setEditionInfoOpen(false)
                 }}
-                className="relative h-10 w-10 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted dark:text-slate-300 hover:text-core-navy dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                className="relative h-11 w-11 sm:h-10 sm:w-10 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted dark:text-slate-300 hover:text-core-navy dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 aria-label="Notificaciones"
               >
                 <Bell className="w-4 h-4" strokeWidth={1.85} />
@@ -593,7 +646,7 @@ export function AppShell({
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-3.5 z-50">
+                <div className="fixed inset-x-3 top-[4.25rem] max-h-[calc(100dvh-6rem)] overflow-y-auto cf-scroll-contain sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 rounded-card bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float p-3.5 z-50">
                   <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-core-border dark:border-[#282C5A]">
                     <span className="text-xs font-bold text-core-navy dark:text-white">
                       Avisos operativos ({unreadCount} sin leer)
@@ -602,7 +655,7 @@ export function AppShell({
                       <button
                         type="button"
                         onClick={markAllRead}
-                        className="text-[11px] font-semibold text-core-violet dark:text-indigo-300 hover:underline"
+                        className="min-h-11 px-1 text-xs font-semibold text-core-violet dark:text-indigo-300 hover:underline"
                       >
                         Marcar leídas
                       </button>
@@ -622,7 +675,7 @@ export function AppShell({
                           setNotificationsOpen(false)
                           onNavigate(n.targetView)
                         }}
-                        className={`w-full text-left p-2.5 rounded-xl transition-colors flex items-start justify-between gap-2 ${
+                        className={`w-full min-h-11 text-left p-3 rounded-xl transition-colors flex items-start justify-between gap-2 ${
                           n.unread
                             ? 'bg-core-violet/6 dark:bg-core-violet/15'
                             : 'hover:bg-core-cloud dark:hover:bg-white/5'
@@ -649,7 +702,7 @@ export function AppShell({
         </header>
 
         {/* C. ÁREA DE CONTENIDO PRINCIPAL CON SCROLL INDEPENDIENTE */}
-        <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10">
+        <main className="flex-1 min-h-0 overflow-y-auto cf-scroll-contain p-4 sm:p-6 lg:p-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] [@media(max-height:480px)]:pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-10">
           <div className="max-w-[1600px] w-full mx-auto">
             {children}
             <LegalFooter className="mt-10 pt-5 border-t border-core-border dark:border-[#282C5A]" />
@@ -658,7 +711,7 @@ export function AppShell({
 
         {/* BARRA DE NAVEGACIÓN COMPACTA MÓVIL (Sin enlace a Sistema UI) */}
         <nav
-          className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-core-navy text-white border-t border-white/10 px-2 py-1.5 flex items-center justify-around"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-core-navy text-white border-t border-white/10 px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] flex items-stretch justify-around"
           aria-label="Navegación rápida móvil"
         >
           {[
@@ -666,7 +719,6 @@ export function AppShell({
             { id: 'clientes', label: 'Clientes', icon: Users },
             { id: 'solicitudes', label: 'Solicitudes', icon: Inbox },
             { id: 'tareas', label: 'Tareas', icon: CheckSquare },
-            { id: 'documentos', label: 'Documentos', icon: FileText },
           ].map((item) => {
             const Icon = item.icon
             const isActive = activeView === item.id
@@ -675,15 +727,23 @@ export function AppShell({
                 key={item.id}
                 type="button"
                 onClick={() => handleNavClick(item.id)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-[11px] font-medium ${
+                className={`flex-1 min-w-0 min-h-14 [@media(max-height:480px)]:min-h-11 flex flex-col [@media(max-height:480px)]:flex-row items-center justify-center gap-0.5 [@media(max-height:480px)]:gap-1.5 px-0.5 py-1 rounded-xl text-[11px] font-medium ${
                   isActive ? 'text-core-lime font-semibold' : 'text-slate-400'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-core-lime' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
+                <Icon className={`w-5 h-5 ${isActive ? 'text-core-lime' : 'text-slate-400'}`} />
+                <span className="truncate max-w-full">{item.label}</span>
               </button>
             )
           })}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex-1 min-w-0 min-h-14 [@media(max-height:480px)]:min-h-11 flex flex-col [@media(max-height:480px)]:flex-row items-center justify-center gap-0.5 [@media(max-height:480px)]:gap-1.5 px-0.5 py-1 rounded-xl text-[11px] font-medium text-slate-400"
+          >
+            <Menu className="w-5 h-5 text-slate-400" />
+            <span>Más</span>
+          </button>
         </nav>
       </div>
     </div>
