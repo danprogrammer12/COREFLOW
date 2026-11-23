@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   ShieldCheck,
   Building2,
@@ -16,6 +16,8 @@ import {
   Lock,
   Sparkles,
   RefreshCw,
+  Menu,
+  X,
 } from 'lucide-react'
 import { CoreFlowLogo, CoreFlowIsotipo } from '../components/brand/CoreFlowLogo'
 import { DesignSystemView } from './DesignSystemView'
@@ -53,6 +55,16 @@ export function PlatformAdminView({
   const [activeSection, setActiveSection] = useState('organizaciones')
   const [showInternalDesignSystem, setShowInternalDesignSystem] = useState(false)
   const [toast, setToast] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Escape cierra el menú lateral en móvil
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   const blankPlan = () => ({
     planCode: '',
@@ -196,7 +208,7 @@ export function PlatformAdminView({
   ]
 
   return (
-    <div className="h-screen w-full overflow-hidden flex flex-col lg:flex-row bg-core-cloud dark:bg-[#0F1126] text-core-navy dark:text-slate-100">
+    <div className="h-screen h-dvh w-full overflow-hidden flex flex-col lg:flex-row bg-core-cloud dark:bg-[#0F1126] text-core-navy dark:text-slate-100">
       {toast && (
         <ToastNotification
           title={toast.title}
@@ -206,12 +218,31 @@ export function PlatformAdminView({
       )}
 
       {/* SIDEBAR EXCLUSIVO DE COREFLOW PLATFORM ADMIN (100% Viewport Height, Perfil Anclado al Pie) */}
-      <aside className="w-full lg:w-72 lg:h-screen bg-core-navy text-white flex flex-col border-b lg:border-b-0 lg:border-r border-white/10 shrink-0">
-        <div className="h-16 px-5 flex items-center justify-between border-b border-white/10 shrink-0">
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-core-navy/70 backdrop-blur-xs lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-[min(18rem,86vw)] h-dvh lg:static lg:w-72 lg:h-screen bg-core-navy text-white flex flex-col border-r border-white/10 shrink-0 transition-transform duration-200 ease-out lg:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="h-16 px-4 lg:px-5 flex items-center justify-between gap-2 border-b border-white/10 shrink-0">
           <CoreFlowLogo variant="horizontal" theme="dark" size="sm" />
           <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-core-lime text-core-navy">
             Platform Admin
           </span>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden h-11 w-11 -mr-2 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-white/10"
+            aria-label="Cerrar menú"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="p-4 shrink-0">
@@ -240,8 +271,9 @@ export function PlatformAdminView({
                 onClick={() => {
                   setShowInternalDesignSystem(false)
                   setActiveSection(item.id)
+                  setMobileMenuOpen(false)
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                className={`w-full min-h-11 lg:min-h-0 flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-core-violet text-white font-semibold shadow-md shadow-core-violet/25'
                     : 'text-slate-300 hover:text-white hover:bg-white/6'
@@ -255,7 +287,7 @@ export function PlatformAdminView({
         </nav>
 
         {/* Pie del Sidebar Anclado Siempre Visible: Sesión Real de Administrador de Plataforma */}
-        <div className="shrink-0 mt-auto p-4 border-t border-white/10 bg-[#12142B] space-y-3">
+        <div className="shrink-0 mt-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-white/10 bg-[#12142B] space-y-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-core-violet to-core-lime flex items-center justify-center text-xs font-extrabold text-core-navy shrink-0">
               PA
@@ -274,7 +306,7 @@ export function PlatformAdminView({
           <button
             type="button"
             onClick={onSignOut}
-            className="w-full h-9 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold text-white flex items-center justify-center gap-2 transition-colors"
+            className="w-full h-11 lg:h-9 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-sm lg:text-xs font-semibold text-white flex items-center justify-center gap-2 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5 text-core-lime" />
             <span>Cerrar sesión de Plataforma</span>
@@ -283,12 +315,23 @@ export function PlatformAdminView({
       </aside>
 
       {/* ÁREA PRINCIPAL DE COREFLOW PLATFORM ADMIN CON SCROLL INDEPENDIENTE */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <header className="h-16 shrink-0 bg-white/95 dark:bg-[#171936]/95 border-b border-core-border dark:border-[#282C5A] px-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden">
+        <header className="h-16 shrink-0 bg-white/95 dark:bg-[#171936]/95 border-b border-core-border dark:border-[#282C5A] px-3 sm:px-6 flex items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden h-11 w-11 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-navy dark:text-white shrink-0"
+              aria-label="Abrir menú de navegación"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <GeometricAccentBar size="sm" />
-            <span className="text-sm font-extrabold text-core-navy dark:text-white">
-              Consola de suscripciones y planes
+            <span className="text-sm font-extrabold text-core-navy dark:text-white truncate">
+              <span className="sm:hidden">
+                {navItems.find((item) => item.id === activeSection)?.label || 'Consola de plataforma'}
+              </span>
+              <span className="hidden sm:inline">Consola de suscripciones y planes</span>
             </span>
           </div>
 
@@ -301,15 +344,16 @@ export function PlatformAdminView({
             <button
               type="button"
               onClick={onToggleDarkMode}
-              className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted hover:text-core-navy dark:hover:text-white"
+              className="h-11 w-11 sm:h-9 sm:w-9 inline-flex items-center justify-center rounded-xl border border-core-border dark:border-[#282C5A] text-core-muted hover:text-core-navy dark:hover:text-white shrink-0"
               title="Alternar tema visual"
+              aria-label="Alternar tema visual"
             >
               {darkMode ? <Sun className="w-4 h-4 text-core-lime" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
         </header>
 
-        <main className="flex-1 min-h-0 overflow-y-auto p-6 lg:p-8">
+        <main className="flex-1 min-h-0 overflow-y-auto cf-scroll-contain p-4 sm:p-6 lg:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <div className="max-w-[1560px] w-full mx-auto space-y-6">
           {/* KPIs GLOBALES DE PLATAFORMA */}
           {activeSection === 'organizaciones' && (

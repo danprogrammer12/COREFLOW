@@ -10,7 +10,7 @@ const PrivacyContext = createContext(null)
 
 const FOCUS =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-core-violet'
-const BUTTON = `h-10 px-3 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-colors ${FOCUS}`
+const BUTTON = `h-11 sm:h-10 px-3 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-colors ${FOCUS}`
 const SOLID = `${BUTTON} bg-core-navy text-white hover:bg-[#232650] dark:bg-white dark:text-core-navy dark:hover:bg-slate-200`
 const OUTLINE = `${BUTTON} border border-core-border dark:border-[#3A3F75] text-core-navy dark:text-white hover:bg-core-cloud dark:hover:bg-white/5`
 
@@ -71,7 +71,7 @@ function CookieBanner() {
     <section
       role="region"
       aria-label="Aviso de cookies"
-      className="fixed z-[60] inset-x-3 bottom-3 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:max-w-[440px] rounded-card border border-core-border dark:border-[#3A3F75] bg-white dark:bg-[#171936] p-4 sm:p-5 shadow-[0_18px_40px_-12px_rgba(23,25,54,0.35)]"
+      className="fixed z-[60] inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:right-5 sm:bottom-5 sm:max-w-[440px] max-h-[70dvh] overflow-y-auto rounded-card border border-core-border dark:border-[#3A3F75] bg-white dark:bg-[#171936] p-3.5 sm:p-5 shadow-[0_18px_40px_-12px_rgba(23,25,54,0.35)]"
     >
       <h2 className="flex items-center gap-2 text-sm font-bold text-core-navy dark:text-white">
         <svg viewBox="0 0 12 10.4" className="w-2.5 h-2.5" aria-hidden="true">
@@ -79,14 +79,17 @@ function CookieBanner() {
         </svg>
         Tu privacidad en CoreFlow
       </h2>
-      <p className="mt-2 text-xs leading-relaxed text-core-muted dark:text-slate-300">
-        Usamos almacenamiento necesario para que puedas iniciar sesión y trabajar de forma segura. Con tu permiso,
-        también recordaremos preferencias como el tema. No usamos analítica ni publicidad.{' '}
+      <p className="mt-1.5 sm:mt-2 text-xs leading-snug sm:leading-relaxed text-core-muted dark:text-slate-300">
+        Usamos almacenamiento necesario para que puedas iniciar sesión y trabajar de forma segura.
+        <span className="hidden sm:inline">
+          {' '}Con tu permiso, también recordaremos preferencias como el tema.
+        </span>{' '}
+        No usamos analítica ni publicidad.{' '}
         <a href="#/legal/cookies" className={`font-semibold text-core-violet dark:text-indigo-300 underline underline-offset-2 rounded ${FOCUS}`}>
           Política de cookies
         </a>
       </p>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2">
         <button type="button" onClick={rejectOptional} className={SOLID}>
           Rechazar opcionales
         </button>

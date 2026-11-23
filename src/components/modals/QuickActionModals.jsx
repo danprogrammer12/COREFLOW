@@ -92,9 +92,17 @@ export function NewRequestModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-core-navy/65 backdrop-blur-xs">
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float overflow-hidden">
-        <div className="relative px-6 py-4 bg-core-navy text-white flex items-center justify-between overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-core-navy/65 backdrop-blur-xs"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Registrar nueva solicitud"
+        className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto cf-scroll-contain rounded-t-2xl sm:rounded-2xl bg-white dark:bg-[#171936] border border-core-border dark:border-[#282C5A] shadow-float"
+      >
+        <div className="sticky top-0 z-20 px-4 sm:px-6 py-3 sm:py-4 bg-core-navy text-white flex items-center justify-between overflow-hidden">
           <svg
             className="pointer-events-none absolute top-0 right-0 w-32 h-20 opacity-35"
             viewBox="0 0 120 80"
@@ -115,14 +123,14 @@ export function NewRequestModal({
           <button
             type="button"
             onClick={onClose}
-            className="relative z-10 p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
+            className="relative z-10 h-11 w-11 -mr-2 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
             aria-label="Cerrar ventana"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 space-y-4">
           <InputField
             label="Asunto / Descripción de la solicitud"
             placeholder="Ej. Estandarización de entregables trimestrales..."
@@ -139,7 +147,7 @@ export function NewRequestModal({
               <select
                 value={selectedClient}
                 onChange={(e) => setClient(e.target.value)}
-                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+                className="h-11 sm:h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
                 {clientOptions.length === 0 && <option value="">Sin clientes registrados</option>}
                 {clientOptions.map((option) => (
@@ -156,7 +164,7 @@ export function NewRequestModal({
               <select
                 value={selectedArea}
                 onChange={(e) => setArea(e.target.value)}
-                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+                className="h-11 sm:h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
                 {areaOptions.map((option) => (
                   <option key={option}>{option}</option>
@@ -174,7 +182,7 @@ export function NewRequestModal({
               <select
                 value={selectedOwner}
                 onChange={(e) => setResponsable(e.target.value)}
-                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+                className="h-11 sm:h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
                 {ownerOptions.map((option) => (
                   <option key={option}>{option}</option>
@@ -189,7 +197,7 @@ export function NewRequestModal({
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+                className="h-11 sm:h-10 w-full rounded-xl border border-core-border dark:border-[#2E3366] bg-white dark:bg-[#12142E] px-3 text-sm text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
               >
                 <option>Alta</option>
                 <option>Media</option>
@@ -303,7 +311,7 @@ export function RequestDetailDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-core-navy/60 backdrop-blur-xs">
-      <div className="w-full sm:max-w-lg bg-white dark:bg-[#171936] h-full border-l border-core-border dark:border-[#282C5A] shadow-2xl flex flex-col justify-between overflow-hidden">
+      <div className="w-full sm:max-w-lg bg-white dark:bg-[#171936] h-full max-h-dvh border-l border-core-border dark:border-[#282C5A] shadow-2xl flex flex-col justify-between overflow-hidden">
         {/* ENCABEZADO CORREGIDO: Jerarquía limpia, sin colapso de flexbox ni truncamiento de una sola letra */}
         <div className="p-5 sm:p-6 bg-core-navy text-white border-b border-white/10">
           <div className="flex items-start justify-between gap-3">
@@ -323,7 +331,7 @@ export function RequestDetailDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
+              className="h-11 w-11 -mr-2 -mt-2 inline-flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-white/10 shrink-0"
               aria-label="Cerrar panel de seguimiento"
             >
               <X className="w-4 h-4" />
@@ -380,7 +388,7 @@ export function RequestDetailDrawer({
                   key={st.id}
                   type="button"
                   onClick={() => onUpdateStatus?.(request.id, st.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  className={`min-h-11 sm:min-h-0 px-3 sm:px-2.5 py-2 sm:py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                     request.estado === st.id
                       ? 'border-core-violet bg-core-violet text-white shadow-2xs'
                       : 'border-core-border dark:border-[#282C5A] bg-white dark:bg-[#12142E] text-core-navy dark:text-slate-200 hover:border-core-violet/50'
@@ -482,14 +490,14 @@ export function RequestDetailDrawer({
         {/* Pie para agregar nota de seguimiento */}
         <form
           onSubmit={handleAddNote}
-          className="p-4 border-t border-core-border dark:border-[#282C5A] bg-core-cloud/40 dark:bg-[#101228] flex items-center gap-2"
+          className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-core-border dark:border-[#282C5A] bg-core-cloud/40 dark:bg-[#101228] flex items-center gap-2"
         >
           <input
             type="text"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Añadir observación o nota de avance..."
-            className="h-10 flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+            className="h-11 sm:h-10 min-w-0 flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
           />
           <Button type="submit" variant="primary" size="md">
             Registrar
@@ -603,7 +611,7 @@ export function AiAssistantDrawer({ isOpen, onClose, edition, unifiedMetrics }) 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Consultar indicadores o solicitudes..."
-            className="h-10 flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
+            className="h-11 sm:h-10 min-w-0 flex-1 rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#171936] px-3.5 text-xs text-core-navy dark:text-white focus:border-core-violet focus:outline-none"
           />
           <Button type="submit" variant="primary" size="md" icon={Send} iconPosition="left">
             Consultar

@@ -45,8 +45,8 @@ export function Button({
     'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-core-violet/35 disabled:opacity-50 disabled:pointer-events-none select-none whitespace-nowrap'
 
   const sizes = {
-    sm: 'h-8 px-3 text-xs rounded-lg',
-    md: 'h-10 px-4 text-xs sm:text-sm rounded-xl',
+    sm: 'h-10 sm:h-8 px-3 text-xs rounded-lg',
+    md: 'h-11 sm:h-10 px-4 text-sm rounded-xl',
     lg: 'h-11 px-5 text-sm rounded-xl',
   }
 
@@ -495,7 +495,7 @@ export function TaskProgressCard({ task, onToggleStatus }) {
             type="button"
             onClick={() => onToggleStatus?.(task.id || task.code)}
             aria-label={isCompleted ? 'Marcar como pendiente' : 'Completar tarea'}
-            className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+            className={`relative before:absolute before:-inset-3 before:content-[''] mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
               isCompleted
                 ? 'bg-core-violet border-core-violet text-white'
                 : 'border-slate-300 dark:border-slate-600 hover:border-core-violet'
@@ -605,13 +605,13 @@ export function SearchInput({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#12142E] pl-10 pr-8 text-xs sm:text-sm text-core-navy dark:text-white placeholder:text-slate-400 focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/20 transition-all"
+        className="h-11 sm:h-10 w-full rounded-xl border border-core-border dark:border-[#282C5A] bg-white dark:bg-[#12142E] pl-10 pr-10 text-sm text-core-navy dark:text-white placeholder:text-slate-400 focus:border-core-violet focus:outline-none focus:ring-2 focus:ring-core-violet/20 transition-all"
       />
       {value && onClear && (
         <button
           type="button"
           onClick={onClear}
-          className="absolute right-2.5 p-1 text-slate-400 hover:text-core-navy dark:hover:text-white"
+          className="absolute right-1 h-9 w-9 inline-flex items-center justify-center text-slate-400 hover:text-core-navy dark:hover:text-white"
           aria-label="Limpiar búsqueda"
         >
           <X className="w-3.5 h-3.5" />
@@ -634,7 +634,7 @@ export function Tabs({ tabs, activeTab, onChange }) {
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className={`relative pb-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`relative min-h-11 sm:min-h-0 pb-3 pt-2 sm:pt-0 text-sm font-medium transition-colors whitespace-nowrap ${
               isActive
                 ? 'text-core-violet dark:text-indigo-400 font-semibold'
                 : 'text-core-muted hover:text-core-navy dark:text-slate-400 dark:hover:text-white'
