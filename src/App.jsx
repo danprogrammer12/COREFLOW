@@ -2,6 +2,8 @@ import React, { lazy, Suspense, useState, useEffect } from 'react'
 import { CoreFlowProvider, useCoreFlow } from './adapters/react/CoreFlowContext'
 import { LandingView } from './views/LandingView'
 import { PrivacyProvider, usePrivacy } from './components/privacy/PrivacyProvider'
+import { applyRouteMeta, getPath, navigate, useRoute } from './lib/router'
+import { canonicalUrl, getRouteMeta } from './lib/routes'
 
 // Todo lo que la landing no necesita se descarga bajo demanda
 const lazyNamed = (loader, name) => lazy(() => loader().then((m) => ({ default: m[name] })))
@@ -16,18 +18,9 @@ const ToastNotification = lazyNamed(() => import('./components/ui/Primitives'), 
 const NewRequestModal = lazyNamed(() => import('./components/modals/QuickActionModals'), 'NewRequestModal')
 const RequestDetailDrawer = lazyNamed(() => import('./components/modals/QuickActionModals'), 'RequestDetailDrawer')
 const DemoView = lazyNamed(() => import('./views/DemoView'), 'DemoView')
+const NotFoundView = lazyNamed(() => import('./views/NotFoundView'), 'NotFoundView')
 
 const THEME_KEY = 'coreflow_ui_theme'
-
-function useHashRoute() {
-  const [hash, setHash] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash))
-  useEffect(() => {
-    const onChange = () => setHash(window.location.hash)
-    window.addEventListener('hashchange', onChange)
-    return () => window.removeEventListener('hashchange', onChange)
-  }, [])
-  return hash
-}
 
 function CoreFlowWorkspace() {
   const {
@@ -90,7 +83,7 @@ function CoreFlowWorkspace() {
 
   const [activeView, setActiveView] = useState('dashboard')
   const privacy = usePrivacy()
-  const route = useHashRoute()
+  const route = useRoute()
   // El tema solo se recuerda con consentimiento funcional.
   const [darkMode, setDarkMode] = useState(() => privacy.readPreference(THEME_KEY) === 'dark')
   const [searchQuery, setSearchQuery] = useState('')
@@ -114,6 +107,19 @@ function CoreFlowWorkspace() {
   useEffect(() => {
     privacy.writePreference(THEME_KEY, darkMode ? 'dark' : 'light')
   }, [darkMode, privacy])
+
+  // Título, descripción, canonical y robots siguen a la ruta
+  useEffect(() => {
+    const meta = getRouteMeta(route)
+    applyRouteMeta(meta, meta.path === null ? null : canonicalUrl(meta.path))
+  }, [route.name, route.slug])
+
+  // Rutas que solo tienen sentido sin sesión (o solo con datos de ejemplo) vuelven a la raíz
+  useEffect(() => {
+    const inertWithSession = isAuthenticated && !showAuthScreen && (route.name === 'acceso' || route.name === 'demo')
+    const demoUnavailable = !isAuthenticated && !isDemoData && route.name === 'demo'
+    if (inertWithSession || demoUnavailable) navigate('/', { replace: true })
+  }, [route.name, isAuthenticated, showAuthScreen, isDemoData])
 
   const selectedRequest = requests.find((r) => r.id === selectedRequestId) || null
 
@@ -142,7 +148,7 @@ function CoreFlowWorkspace() {
   const handleAuthenticate = async (credentials) => {
     const res = await authenticateAccount(credentials)
     if (res.ok) {
-      if (window.location.hash === '#/acceso') history.replaceState(null, '', window.location.pathname + window.location.search)
+      if (getPath() === '/acceso') navigate('/', { replace: true })
       setShowAuthScreen(false)
       setSelectedRequestId(null)
       setActiveView('dashboard')
@@ -158,24 +164,25 @@ function CoreFlowWorkspace() {
     }
     setSelectedRequestId(null)
     setShowAuthScreen(true)
+    navigate('/acceso')
   }
 
   const goToLogin = () => {
     setShowAuthScreen(true)
-    window.location.hash = '#/acceso'
+    navigate('/acceso')
   }
 
   const goToDemo = () => {
     setShowAuthScreen(false)
     setDemoError(null)
-    window.location.hash = '#/demo'
+    navigate('/demo')
   }
 
   // showAuthScreen sigue en true tras ir al login; hay que apagarlo para que la landing vuelva a mostrarse
   const goToHome = () => {
     setShowAuthScreen(false)
     setDemoError(null)
-    window.location.hash = '#/'
+    navigate('/')
   }
 
   const handleStartDemo = async (demo) => {
@@ -187,7 +194,7 @@ function CoreFlowWorkspace() {
       else {
         setShowAuthScreen(false)
         setActiveView('dashboard')
-        if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search)
+        if (getPath() !== '/') navigate('/', { replace: true })
       }
     } catch {
       setDemoError('No se pudo abrir la demo. Inténtalo de nuevo.')
@@ -204,7 +211,7 @@ function CoreFlowWorkspace() {
     setPendingDemoId(demo.id)
     await new Promise((resolve) => setTimeout(resolve, DEMO_TRANSITION_MS))
     // Si la persona volvió atrás mientras cargaba, se cancela en vez de abrir el dashboard por sorpresa
-    if (!window.location.hash.startsWith('#/demo')) {
+    if (getPath() !== '/demo') {
       setPendingDemoId(null)
       return
     }
@@ -218,12 +225,16 @@ function CoreFlowWorkspace() {
   }
 
   // 0. Centro legal: accesible con o sin sesión
-  if (route.startsWith('#/legal')) {
-    return <LegalCenterView slug={route.split('/')[2] || 'privacidad'} onSubmitPrivacyRequest={submitPrivacyRequest} />
+  if (route.name === 'legal') {
+    return <LegalCenterView slug={route.slug} onSubmitPrivacyRequest={submitPrivacyRequest} />
+  }
+
+  if (route.name === 'notfound') {
+    return <NotFoundView />
   }
 
   // 0.4 Pantalla de demo (solo con datos de ejemplo): elegir Starter o Business
-  if (!isAuthenticated && isDemoData && route.startsWith('#/demo')) {
+  if (!isAuthenticated && isDemoData && route.name === 'demo') {
     return (
       <DemoView
         onStartDemo={startDemoWithTransition}
@@ -235,7 +246,7 @@ function CoreFlowWorkspace() {
   }
 
   // 0.5 Landing pública: primera pantalla para quien llega sin sesión
-  if (!isAuthenticated && !showAuthScreen && !route.startsWith('#/acceso')) {
+  if (!isAuthenticated && !showAuthScreen && route.name !== 'acceso') {
     return (
       <LandingView
         isDemoData={isDemoData}
@@ -305,7 +316,7 @@ function CoreFlowWorkspace() {
         onToggleDarkMode={() => setDarkMode((d) => !d)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onOpenAuth={() => setShowAuthScreen(true)}
+        onOpenAuth={goToLogin}
         onSignOut={handleSignOut}
         counts={{
           clientes: unifiedMetrics.acumulados.clientesTotal,

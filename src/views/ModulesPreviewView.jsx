@@ -856,9 +856,9 @@ function SettingsModule({ members, departments, branches, entitlementsResolved, 
           </p>
           <ul className="mt-3 space-y-1.5 text-xs">
             {[
-              ['#/legal/tratamiento-datos', 'Política de tratamiento de datos'],
-              ['#/legal/terminos', 'Términos y acuerdo de tratamiento'],
-              ['#/legal/derechos', 'Solicitudes de titulares'],
+              ['/legal/tratamiento-datos', 'Política de tratamiento de datos'],
+              ['/legal/terminos', 'Términos y acuerdo de tratamiento'],
+              ['/legal/derechos', 'Solicitudes de titulares'],
             ].map(([href, label]) => (
               <li key={href}>
                 <a href={href} className="font-semibold text-core-violet dark:text-indigo-300 hover:underline underline-offset-2">

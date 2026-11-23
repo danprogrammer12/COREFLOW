@@ -124,12 +124,12 @@ La landing quedó **oscura de punta a punta** con color de marca; ya no hay ritm
 - **Pestañas activas** (explorador y hero): lima con texto navy.
 - **Contraste verificado** (render sin texto, percentil del fondo): todo el texto real >= 4,5:1; el más bajo ~4,5:1 (texto gris pequeño de tarjetas tintadas).
 
-## 9. Pantalla de demo (`#/demo`)
+## 9. Pantalla de demo (`/demo`)
 
-`src/views/DemoView.jsx`, ruta hash propia (el botón atrás del navegador vuelve a la landing). Solo existe con datos de ejemplo (`isDemoData`) y sin sesión.
+`src/views/DemoView.jsx`, ruta propia con History API (el botón atrás del navegador vuelve a la landing). Solo existe con datos de ejemplo (`isDemoData`) y sin sesión.
 
 - **Qué muestra:** cabecera mínima con logo y "Volver al inicio", fondo navy con `Atmos` y `Tri`, y dos tarjetas (Starter y Business) con borde luminoso. Cada una: límites reales leídos de `PLANS_CATALOG` (colaboradores, sedes, automatizaciones, administradores, permisos), 4 cosas que se pueden probar según el plan, rótulo "Datos de ejemplo" y botón "Entrar a la demo de X".
-- **Quién abre la pantalla:** "Explorar la demo" (barra, hero y cierre) navega a `#/demo` (prop nueva opcional `onOpenDemo` de `LandingView`; sin ella se mantiene el comportamiento anterior). Los botones "Ver demo de Starter/Business" de los planes abren la pantalla y **arrancan ese plan directo** (el clic ya expresa la elección).
+- **Quién abre la pantalla:** "Explorar la demo" (barra, hero y cierre) navega a `/demo` (prop nueva opcional `onOpenDemo` de `LandingView`; sin ella se mantiene el comportamiento anterior). Los botones "Ver demo de Starter/Business" de los planes abren la pantalla y **arrancan ese plan directo** (el clic ya expresa la elección).
 - **Carga:** "Preparando tu espacio de demostración…" con el isotipo que se arma pieza a pieza y un anillo giratorio (sin animación con `prefers-reduced-motion`), región `aria-live="polite"` y foco en el encabezado. La autenticación demo es síncrona, así que `startDemoWithTransition` (`App.jsx`) mantiene la carga 900 ms antes de llamar a `handleStartDemo`; si la persona vuelve atrás durante ese tiempo, se cancela.
 - **Error:** aviso `role="alert"` con foco y botón "Reintentar con X"; las dos opciones siguen disponibles sin salir de la pantalla.
-- **Navegación:** Escape y "Volver al inicio" usan `goToHome` (apaga `showAuthScreen`); al entrar, `handleStartDemo` limpia el hash y abre el dashboard.
+- **Navegación:** Escape y "Volver al inicio" usan `goToHome` (apaga `showAuthScreen`); al entrar, `handleStartDemo` vuelve a `/` (replace) y abre el dashboard.

@@ -92,6 +92,16 @@ npm run build
 
 ---
 
+### 5.1 Rutas y despliegue en Vercel
+
+CoreFlow usa rutas normales (History API, router propio en `src/lib/router.js` y `src/lib/routes.js`): `/`, `/acceso`, `/demo`, `/legal` y `/legal/:slug`. Cualquier otra ruta muestra la vista 404.
+
+- Los enlaces antiguos con hash (`#/acceso`, `#/demo`, `#/legal/privacidad`) se redirigen solos a la ruta normal. Los anclas de sección (`#planes`) y los fragmentos de Supabase (`#access_token=...`) no se tocan.
+- `vercel.json` reescribe a `index.html` toda ruta sin punto que no empiece por `assets/`, `fonts/` ni `brand/` (así un chunk inexistente devuelve 404 y no HTML). Los headers de caché de `/assets` y `/fonts` se conservan; `/acceso` y `/demo` envían `X-Robots-Tag: noindex`.
+- `vite dev` y `vite preview` ya sirven el fallback SPA.
+- SEO: título, descripción, canonical y robots se actualizan por ruta; `public/robots.txt` y `public/sitemap.xml` apuntan a `https://coreflowwebcore.vercel.app`. Si cambia el dominio, actualizar `SITE_URL` en `src/lib/routes.js`, `index.html`, `robots.txt` y `sitemap.xml`.
+- Pruebas del router: `npm run test:routing`.
+
 ## 6. Flujo de Trabajo en GitHub
 
 - **`main`**: Rama principal protegida para despliegues de producción.

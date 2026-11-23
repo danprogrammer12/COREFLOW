@@ -214,7 +214,7 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, onBackToHome,
 
       <main className="relative flex items-center justify-center px-6 py-12 sm:px-10">
         <a
-          href="#/"
+          href="/"
           onClick={(e) => {
             if (!onBackToHome) return
             e.preventDefault()
@@ -384,9 +384,9 @@ export function AuthView({ onAuthenticate, onRequestPasswordReset, onBackToHome,
 
           <p className="mt-6 text-[12.5px] leading-relaxed text-slate-600">
             Al ingresar aceptas los{' '}
-            <a href="#/legal/terminos" className="font-semibold text-core-navy underline underline-offset-2">términos de uso</a>{' '}
+            <a href="/legal/terminos" className="font-semibold text-core-navy underline underline-offset-2">términos de uso</a>{' '}
             y el tratamiento de tus datos según la{' '}
-            <a href="#/legal/tratamiento-datos" className="font-semibold text-core-navy underline underline-offset-2">política de tratamiento</a>.
+            <a href="/legal/tratamiento-datos" className="font-semibold text-core-navy underline underline-offset-2">política de tratamiento</a>.
           </p>
           <div className="mt-10 space-y-3 lg:hidden">
             <p className="text-[13px] text-core-muted">Desarrollado por Webcore</p>

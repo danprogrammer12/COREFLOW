@@ -19,6 +19,7 @@ npm install
 npm run dev      # servidor de desarrollo
 npm run build    # compilación de producción en dist/
 npm run preview  # sirve la compilación localmente
+npm run test:routing  # pruebas del router (rutas /acceso, /demo, /legal/:slug)
 ```
 
 El proyecto aún no tiene pruebas automatizadas.

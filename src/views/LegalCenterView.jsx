@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { CoreFlowLogo } from '../components/brand/CoreFlowLogo'
 import { TriangleMark } from '../components/brand/BrandShapes'
@@ -266,16 +266,6 @@ function RightsView({ onSubmitRequest }) {
 export function LegalCenterView({ slug, onSubmitPrivacyRequest }) {
   const isRights = slug === 'derechos'
   const document = isRights ? null : getLegalDocument(slug) || LEGAL_DOCUMENTS[0]
-  const topRef = useRef(null)
-
-  useEffect(() => {
-    topRef.current?.scrollIntoView({ block: 'start' })
-    window.document.title = `${isRights ? 'Tus derechos' : document.title} · CoreFlow`
-    return () => {
-      window.document.title = 'CoreFlow — Organiza. Conecta. Evoluciona.'
-    }
-  }, [slug, isRights, document])
-
   const navItem = (href, label, active) => (
     <a
       key={href}
@@ -290,12 +280,12 @@ export function LegalCenterView({ slug, onSubmitPrivacyRequest }) {
   )
 
   return (
-    <div ref={topRef} className="min-h-screen bg-core-cloud dark:bg-[#0F1126]">
+    <div className="min-h-screen bg-core-cloud dark:bg-[#0F1126]">
       <header className="relative overflow-hidden bg-core-navy text-white">
         <div className="cf-auth-pattern" aria-hidden="true" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
           <CoreFlowLogo variant="horizontal" theme="dark" size="sm" />
-          <a href="#/" className={`inline-flex items-center gap-1.5 text-sm font-semibold text-slate-200 hover:text-white rounded ${FOCUS}`}>
+          <a href="/" className={`inline-flex items-center gap-1.5 text-sm font-semibold text-slate-200 hover:text-white rounded ${FOCUS}`}>
             <ArrowLeft className="w-4 h-4" />
             Volver a CoreFlow
           </a>
@@ -306,8 +296,8 @@ export function LegalCenterView({ slug, onSubmitPrivacyRequest }) {
         <nav aria-label="Documentos legales" className="lg:sticky lg:top-6 self-start">
           <h2 className={`px-3 text-xs font-semibold ${MUTED}`}>Centro legal</h2>
           <div className="mt-2 space-y-0.5">
-            {LEGAL_DOCUMENTS.map((d) => navItem(`#/legal/${d.slug}`, d.title, !isRights && d.slug === document.slug))}
-            {navItem('#/legal/derechos', 'Ejercer tus derechos', isRights)}
+            {LEGAL_DOCUMENTS.map((d) => navItem(`/legal/${d.slug}`, d.title, !isRights && d.slug === document.slug))}
+            {navItem('/legal/derechos', 'Ejercer tus derechos', isRights)}
           </div>
         </nav>
 
