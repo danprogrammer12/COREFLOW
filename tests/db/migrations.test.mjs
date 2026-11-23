@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Cadena completa de migraciones y regresión de la migración 003.
  */

@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Script de aprovisionamiento sobre migraciones reales.
  * La API de administración de Auth está simulada: no equivale a Supabase real.

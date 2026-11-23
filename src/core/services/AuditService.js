@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SERVICIO DE AUDITORÍA Y TRAZABILIDAD PROTEGIDA
  * CoreFlow — src/core/services/AuditService.js

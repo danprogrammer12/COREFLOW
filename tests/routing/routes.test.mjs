@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL UNITARIO — Rutas públicas (src/lib/routes.js).
  * Lógica pura: parseo de rutas, redirección de hash heredado, metadatos SEO y sitemap.

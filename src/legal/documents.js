@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * DOCUMENTOS LEGALES DE COREFLOW — BORRADORES PARA REVISIÓN JURÍDICA
  * CoreFlow — src/legal/documents.js

@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import { useEffect, useRef, useState } from 'react'
 
 export const clamp = (v, min = 0, max = 1) => Math.min(max, Math.max(min, v))

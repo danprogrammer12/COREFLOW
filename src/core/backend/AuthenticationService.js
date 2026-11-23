@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * AUTENTICACIÓN Y SESIONES CONTRA SUPABASE AUTH
  * CoreFlow — src/core/backend/AuthenticationService.js

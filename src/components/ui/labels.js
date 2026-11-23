@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * Textos visibles para valores internos del sistema.
  * Los códigos siguen viajando sin cambios entre servicios; aquí solo se traducen

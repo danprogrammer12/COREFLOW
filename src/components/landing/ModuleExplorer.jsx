@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React, { useRef, useState } from 'react'
 import { TriangleMark } from '../brand/BrandShapes'
 import { Atmos, Depth, Parallax, Tri, TriEdge } from './atmos'

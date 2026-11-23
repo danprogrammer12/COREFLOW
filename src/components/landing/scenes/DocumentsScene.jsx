@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React from 'react'
 import { Download } from 'lucide-react'
 import { SceneWindow } from '../ui'

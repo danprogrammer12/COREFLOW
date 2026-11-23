@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * MOTOR ASÍNCRONO CONTRA SUPABASE
  * CoreFlow — src/core/backend/index.js

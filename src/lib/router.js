@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * Router mínimo sobre History API, sin dependencias.
  * El estado es location.pathname; cambia con navigate() o con atrás/adelante (popstate).

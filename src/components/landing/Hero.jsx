@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { TriangleCluster, TriangleMark } from '../brand/BrandShapes'

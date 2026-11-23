@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CONTRATO DE RESULTADOS Y ERRORES DE LA CAPA BACKEND
  * CoreFlow — src/core/backend/result.js

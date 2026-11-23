@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * PUNTO DE ENTRADA DEL NÚCLEO ARQUITECTÓNICO DE COREFLOW (100% DESACOPLADO DE REACT)
  * CoreFlow — src/core/index.js

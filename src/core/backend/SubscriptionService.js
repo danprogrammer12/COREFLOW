@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SUSCRIPCIONES, CAPACIDADES Y USO
  * CoreFlow — src/core/backend/SubscriptionService.js

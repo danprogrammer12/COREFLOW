@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CARGA DE DATOS DESDE EL MOTOR DE SUPABASE, SIN DEPENDENCIA DE REACT
  * CoreFlow — src/adapters/react/supabaseData.js

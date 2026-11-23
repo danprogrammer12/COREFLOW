@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SERVICIO DE CAPACIDADES, PLANES Y CUOTAS ADMINISTRABLES DESDE BASE DE DATOS
  * CoreFlow — src/core/services/EntitlementService.js

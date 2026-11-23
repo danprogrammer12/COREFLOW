@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Capa de servicios contra migraciones y RLS reales.
  * PostgREST, Auth y Storage están simulados: no equivale a Supabase real.

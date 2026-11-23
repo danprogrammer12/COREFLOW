@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CONTRATO FUNDAMENTAL DE ESTADOS DE SOLICITUDES Y APROBACIONES
  * CoreFlow — src/core/domain/requestStateMachine.js

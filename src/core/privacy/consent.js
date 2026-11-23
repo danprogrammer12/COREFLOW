@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CONSENTIMIENTO DE COOKIES Y ALMACENAMIENTO LOCAL
  * CoreFlow — src/core/privacy/consent.js

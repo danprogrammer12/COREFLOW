@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * PROVEEDOR RELACIONAL MULTI-TENANT CON PERSISTENCIA Y TRES CONTEXTOS DE ACCESO
  * CoreFlow — src/core/providers/LocalRelationalProvider.js

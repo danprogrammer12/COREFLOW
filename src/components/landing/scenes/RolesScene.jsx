@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React, { useState } from 'react'
 import { BarChart3, Briefcase, CheckSquare, FileText, Inbox, Lock, Settings, Users } from 'lucide-react'
 import { CoreFlowIsotipo } from '../../brand/CoreFlowLogo'

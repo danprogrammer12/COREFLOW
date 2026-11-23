@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * FÁBRICA Y VALIDADOR DE PROVEEDORES DE DATOS
  * CoreFlow — src/core/providers/createDataProvider.js

@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React, { useEffect, useRef } from 'react'
 import { ArrowLeft, ArrowRight, Check, RefreshCw } from 'lucide-react'
 import { PLANS_CATALOG } from '../core/config/plansCatalog'

@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CATÁLOGO BASE Y RESOLUTOR DINÁMICO DE PLANES, CAPACIDADES Y CUOTAS
  * CoreFlow — src/core/config/plansCatalog.js

@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SOLICITUDES Y APROBACIONES
  * CoreFlow — src/core/backend/WorkflowService.js

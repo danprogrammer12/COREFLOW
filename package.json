@@ -1,6 +1,8 @@
 {
   "name": "coreflow-app",
   "private": true,
+  "author": "Webcore Solutions",
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "description": "CoreFlow — Plataforma modular de gestión organizacional por Webcore",
   "type": "module",

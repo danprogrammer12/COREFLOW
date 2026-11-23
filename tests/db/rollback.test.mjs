@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Reversibilidad de las migraciones 008 a 017.
  * Revierte en orden inverso y comprueba que el esquema vuelve al estado de 007,
