@@ -2,12 +2,12 @@ import React from 'react'
 import { usePrivacy } from './PrivacyProvider'
 
 export const LEGAL_LINKS = Object.freeze([
-  { href: '#/legal/privacidad', label: 'Privacidad' },
-  { href: '#/legal/cookies', label: 'Cookies' },
-  { href: '#/legal/terminos', label: 'Términos' },
-  { href: '#/legal/tratamiento-datos', label: 'Tratamiento de datos' },
-  { href: '#/legal/aviso-legal', label: 'Aviso legal' },
-  { href: '#/legal/derechos', label: 'Tus derechos' },
+  { href: '/legal/privacidad', label: 'Privacidad' },
+  { href: '/legal/cookies', label: 'Cookies' },
+  { href: '/legal/terminos', label: 'Términos' },
+  { href: '/legal/tratamiento-datos', label: 'Tratamiento de datos' },
+  { href: '/legal/aviso-legal', label: 'Aviso legal' },
+  { href: '/legal/derechos', label: 'Tus derechos' },
 ])
 
 const FOCUS =

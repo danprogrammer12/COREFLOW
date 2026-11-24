@@ -11,6 +11,7 @@
     "test:core": "node src/core/__tests__/coreArchitecture.verify.js",
     "test:db": "node --test tests/db/migrations.test.mjs tests/db/baseline-001-007.test.mjs tests/db/security.test.mjs tests/db/starter-spec.test.mjs tests/db/rollback.test.mjs tests/db/privacy-018.test.mjs",
     "test:privacy": "node --test tests/privacy/consent.test.mjs",
+    "test:routing": "node --test tests/routing/routes.test.mjs",
     "test:services": "node --test tests/services/backend.test.mjs tests/services/provisioning.test.mjs",
     "test:supabase": "node --test tests/supabase/integration.test.mjs"
   },

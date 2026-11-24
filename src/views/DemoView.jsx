@@ -180,7 +180,7 @@ export function DemoView({ onStartDemo, pendingDemoId = null, demoError = null, 
         <CoreFlowLogo variant="horizontal" theme="dark" size="md" />
         {!busy && (
           <a
-            href="#/"
+            href="/"
             onClick={(e) => {
               if (!onBack) return
               e.preventDefault()

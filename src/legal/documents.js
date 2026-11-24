@@ -133,7 +133,7 @@ export const LEGAL_DOCUMENTS = [
         heading: 'Tus derechos',
         body: [
           'Puedes conocer, actualizar, rectificar y solicitar la supresión de tus datos, revocar la autorización cuando proceda y presentar consultas y reclamos. El procedimiento y los plazos están en la Política de tratamiento de datos personales.',
-          { link: { label: 'Ejercer mis derechos', href: '#/legal/derechos' } },
+          { link: { label: 'Ejercer mis derechos', href: '/legal/derechos' } },
         ],
       },
       {
@@ -374,7 +374,7 @@ export const LEGAL_DOCUMENTS = [
       {
         id: 'area',
         heading: 'Área responsable de atender solicitudes',
-        body: [`${P.privacyArea}. Canal: ${P.privacyEmail}.`, { link: { label: 'Enviar una solicitud', href: '#/legal/derechos' } }],
+        body: [`${P.privacyArea}. Canal: ${P.privacyEmail}.`, { link: { label: 'Enviar una solicitud', href: '/legal/derechos' } }],
       },
       {
         id: 'consultas',

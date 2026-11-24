@@ -15,7 +15,7 @@ Los documentos son borradores para revisión jurídica. No son asesoría legal n
 | Servicio de registro | `src/core/backend/PrivacyService.js` | Registra decisiones y solicitudes en Supabase. Inactivo hasta aplicar la migración 018 y poner `VITE_COREFLOW_PRIVACY_SYNC=on` |
 | Migración propuesta | `supabase/proposed/018_privacy_consent_and_requests.sql` | Tablas inmutables de consentimiento y de solicitudes, con RLS. Fuera de `supabase/migrations` para que nada la aplique sola |
 
-Integración: `App.jsx` (rutas `#/legal/...`, tema guardado solo con consentimiento funcional), `AuthView.jsx`, `AppShell.jsx` (pie y enlace en el menú del usuario), `PlatformAdminView.jsx` y la sección «Privacidad» de Configuración de la organización.
+Integración: `App.jsx` (rutas `/legal/...`, tema guardado solo con consentimiento funcional), `AuthView.jsx`, `AppShell.jsx` (pie y enlace en el menú del usuario), `PlatformAdminView.jsx` y la sección «Privacidad» de Configuración de la organización.
 
 ## 2. Inventario del navegador
 

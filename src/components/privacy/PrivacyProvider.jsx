@@ -85,7 +85,7 @@ function CookieBanner() {
           {' '}Con tu permiso, también recordaremos preferencias como el tema.
         </span>{' '}
         No usamos analítica ni publicidad.{' '}
-        <a href="#/legal/cookies" className={`font-semibold text-core-violet dark:text-indigo-300 underline underline-offset-2 rounded ${FOCUS}`}>
+        <a href="/legal/cookies" className={`font-semibold text-core-violet dark:text-indigo-300 underline underline-offset-2 rounded ${FOCUS}`}>
           Política de cookies
         </a>
       </p>

@@ -324,7 +324,7 @@ export function AppShell({
                   <span>Configuración de organización</span>
                 </button>
                 <a
-                  href="#/legal/privacidad"
+                  href="/legal/privacidad"
                   className="w-full text-left px-2.5 py-2.5 min-h-11 lg:min-h-0 rounded-lg text-sm text-slate-200 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-core-cyan" />
