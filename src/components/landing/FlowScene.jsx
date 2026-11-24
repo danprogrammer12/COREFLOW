@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, Pause, Play, UserCheck, Zap } from 'lucide-react'
 import { TriangleMark } from '../brand/BrandShapes'

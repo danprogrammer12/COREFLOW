@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SERVICIO DEL NÚCLEO ORGANIZACIONAL (AUTENTICACIÓN, TENANCY, SEDES, DEPARTAMENTOS Y MEMBRESÍAS)
  * CoreFlow — src/core/services/OrganizationService.js

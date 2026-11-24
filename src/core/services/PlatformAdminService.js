@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SERVICIO DE ADMINISTRACIÓN GLOBAL DE PLATAFORMA Y PLANES (COREFLOW PLATFORM ADMIN)
  * CoreFlow — src/core/services/PlatformAdminService.js

@@ -2,6 +2,8 @@
 
 Plataforma modular de gestión organizacional por Webcore Solutions.
 
+> © 2026 Webcore Solutions. Uso confidencial: prohibida su copia o redistribución sin autorización escrita (ver NOTICE).
+
 **Estado:** prototipo de interfaz (v0.1.0). Todavía no tiene backend ni variables de entorno.
 
 ## Stack

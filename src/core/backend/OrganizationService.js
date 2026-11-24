@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CONTEXTO ORGANIZACIONAL, ESTRUCTURA Y MEMBRESÍAS
  * CoreFlow — src/core/backend/OrganizationService.js

@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Migración propuesta 018 (consentimiento y solicitudes de privacidad).
  * Se aplica sobre 001–017 en PostgreSQL embebido. No se ejecuta contra Supabase.

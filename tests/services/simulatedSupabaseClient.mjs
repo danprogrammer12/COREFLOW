@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * CLIENTE SIMULADO — NIVEL "SIMULADA"
  * CoreFlow — tests/services/simulatedSupabaseClient.mjs

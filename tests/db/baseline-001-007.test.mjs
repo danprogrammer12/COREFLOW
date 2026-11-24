@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Línea base de las migraciones 001 a 007.
  * Cada prueba demuestra una brecha de la auditoría: pasa si la brecha EXISTE

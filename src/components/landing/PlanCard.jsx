@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { Tri } from './atmos'

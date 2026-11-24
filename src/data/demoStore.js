@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * FUENTE DE DATOS DEMOSTRATIVOS CENTRALIZADA Y MOTOR DE REGLAS DE EDICIÓN / PERMISOS
  * CoreFlow — Fase 1 Validada

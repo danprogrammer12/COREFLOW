@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * SERVICIO DE FLUJO DE SOLICITUDES Y APROBACIONES CON INTEGRIDAD Y ALCANCE RBAC
  * CoreFlow — src/core/services/WorkflowContractService.js

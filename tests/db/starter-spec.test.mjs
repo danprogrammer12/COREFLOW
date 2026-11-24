@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SIMULADA — Especificación Starter v1.0, versiones de documentos y métricas.
  * PostgreSQL embebido con Auth y Storage simulados: no equivale a Supabase real.

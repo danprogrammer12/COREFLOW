@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * MOTOR ANALÍTICO UNIFICADO POR ORGANIZACIÓN (ACUMULADOS VS CORTE TEMPORAL)
  * CoreFlow — src/core/services/MetricsEngineService.js

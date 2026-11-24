@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 // Precarga de chunks en reposo: la landing anticipa /demo y la demo anticipa el dashboard
 const whenIdle = (fn) => {
   if (typeof window === 'undefined') return () => {}

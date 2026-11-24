@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * VALIDADOR DE INTEGRIDAD REFERENCIAL INTRA-ORGANIZACIÓN
  * CoreFlow — src/core/domain/integrityValidator.js

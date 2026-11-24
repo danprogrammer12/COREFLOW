@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * Rutas públicas de CoreFlow: lógica pura (sin DOM ni React) para poder probarla en Node.
  * El hook y la navegación viven en router.js.

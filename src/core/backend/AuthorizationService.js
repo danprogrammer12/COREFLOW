@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * PERMISOS EFECTIVOS PARA LA INTERFAZ
  * CoreFlow — src/core/backend/AuthorizationService.js

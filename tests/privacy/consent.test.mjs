@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL UNITARIO — Consentimiento de cookies (src/core/privacy/consent.js).
  * Cubre los escenarios de navegador sin depender de React ni de un navegador real.

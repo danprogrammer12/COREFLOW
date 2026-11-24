@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SUPABASE-REAL — Datos y acciones que consume la interfaz.
  * Inicia sesión con las cuentas aprovisionadas y usa las mismas funciones de carga

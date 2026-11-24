@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 import React, { useState } from 'react'
 import { Check, ChevronRight, Clock, Lock, Plus } from 'lucide-react'
 import { Button, StatusBadge, ToastNotification } from '../components/ui/Primitives'

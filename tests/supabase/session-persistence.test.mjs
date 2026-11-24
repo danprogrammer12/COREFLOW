@@ -1,3 +1,4 @@
+// © 2026 Webcore Solutions · CoreFlow · Uso confidencial. Prohibida su copia o redistribución sin autorización escrita.
 /**
  * NIVEL SUPABASE-REAL — «Mantener sesión activa».
  * Con la casilla marcada la sesión va a localStorage; sin marcar, a sessionStorage.
